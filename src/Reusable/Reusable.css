@@ -1,0 +1,316 @@
+/* ============================================================
+   Reusable Components — shared styles
+   Semua selector diberi prefix `reusable-` agar tidak bentrok
+   dengan style global di src/index.css & src/App.css.
+   ============================================================ */
+
+/* ---------- 1. Layout ---------- */
+.reusable-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.reusable-header {
+  width: 100%;
+  padding: 16px 0;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.reusable-footer {
+  width: 100%;
+  padding: 32px 0;
+  background-color: #f9fafb;
+  border-top: 1px solid #eaecf0;
+  color: #475467;
+}
+
+/* ---------- 2. Navigation ---------- */
+.reusable-sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background-color: #ffffff;
+  border-right: 1px solid #eaecf0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reusable-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #475467;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.reusable-nav-item:hover {
+  background-color: #f9fafb;
+  color: #101828;
+}
+
+.reusable-nav-item--active {
+  background-color: #ebe4ff;
+  color: #6e39cb;
+  font-weight: 600;
+}
+
+/* ---------- 3. Display / Content ---------- */
+.reusable-card {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.reusable-cart {
+  background-color: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #eaecf0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- 4. Form ---------- */
+.reusable-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s, background-color 0.2s, transform 0.05s;
+}
+
+.reusable-btn:hover {
+  opacity: 0.92;
+}
+
+.reusable-btn:active {
+  transform: translateY(1px);
+}
+
+.reusable-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variant: primary (brand color from proyek) */
+.reusable-btn--primary {
+  background-color: var(--primary, #054c73);
+  color: #ffffff;
+}
+
+.reusable-btn--primary:hover {
+  background-color: #04395a;
+  opacity: 1;
+}
+
+/* Variant: admin (warna ungu untuk halaman admin) */
+.reusable-btn--admin {
+  background-color: #6e39cb;
+  color: #ffffff;
+}
+
+/* Variant: ghost (transparent dengan border) */
+.reusable-btn--ghost {
+  background-color: transparent;
+  color: #374151;
+  border-color: #e5e7eb;
+}
+
+.reusable-btn--ghost:hover {
+  background-color: #f9fafb;
+  opacity: 1;
+}
+
+/* Variant: outline (border warna brand) */
+.reusable-btn--outline {
+  background-color: transparent;
+  color: var(--primary, #054c73);
+  border-color: var(--primary, #054c73);
+}
+
+.reusable-btn--outline:hover {
+  background-color: var(--primary, #054c73);
+  color: #ffffff;
+  opacity: 1;
+}
+
+.reusable-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.reusable-input-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #344054;
+}
+
+.reusable-input,
+.reusable-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #101828;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.reusable-input:focus,
+.reusable-select:focus {
+  border-color: #6e39cb;
+  box-shadow: 0 0 0 3px rgba(110, 57, 203, 0.15);
+}
+
+/* ---------- 5. Feedback ---------- */
+.reusable-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(16, 24, 40, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.reusable-modal {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.reusable-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: #101828;
+}
+
+.reusable-modal-body {
+  font-size: 14px;
+  color: #475467;
+}
+
+.reusable-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #475467;
+  font-size: 14px;
+}
+
+.reusable-loading--fullscreen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-light, #f4f5f7);
+  z-index: 999;
+}
+
+.reusable-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-left-color: var(--primary, #054c73);
+  border-radius: 50%;
+  animation: reusable-spin 0.8s linear infinite;
+}
+
+@keyframes reusable-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- 6. Section ---------- */
+.reusable-hero {
+  width: 100%;
+  min-height: 480px;
+  padding: 80px 0;
+  display: flex;
+  align-items: center;
+  background-color: #f9fafb;
+}
+
+.reusable-feature-section {
+  width: 100%;
+  padding: 80px 0;
+}
+
+.reusable-product-section {
+  width: 100%;
+  padding: 80px 0;
+  background-color: #ffffff;
+}
+
+.reusable-section-title {
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 8px;
+  color: #101828;
+}
+
+.reusable-section-subtitle {
+  font-size: 16px;
+  text-align: center;
+  color: #475467;
+  margin: 0 0 40px;
+}
+
+
+/* ---------- 7. Table (display) ---------- */
+.reusable-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.reusable-table thead th {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475467;
+  border-bottom: 1px solid #eaecf0;
+  background-color: #fcfcfd;
+}
+
+.reusable-table tbody td {
+  padding: 14px 16px;
+  color: #101828;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.reusable-table tbody tr:last-child td {
+  border-bottom: none;
+}

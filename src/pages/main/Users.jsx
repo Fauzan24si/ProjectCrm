@@ -1,0 +1,411 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FiMoreVertical, FiSearch } from 'react-icons/fi';
+import Modal from '../../Reusable/Modal';
+import Button from '../../Reusable/Button';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+
+function Users() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch('https://dummyjson.com/users')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setUsers(data.users || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  const filtered = users.filter((u) => {
+    const q = search.toLowerCase();
+    return (
+      u.firstName.toLowerCase().includes(q) ||
+      u.lastName.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.username.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <>
+      <style>{tableStyles}</style>
+
+      {error && (
+        <div style={styles.error}>Gagal memuat data: {error}</div>
+      )}
+
+      <div className="table-container">
+        {/* Header Section mimicking the image */}
+        <div className="table-header-section">
+          <div>
+            <h1 className="table-main-title">Users list</h1>
+            <p className="table-sub-title">
+              Manage your users, roles, and permissions.
+            </p>
+          </div>
+          <button className="btn-download-all-top" onClick={() => setShowAddModal(true)}>Add user</button>
+        </div>
+
+        <div className="table-search-row">
+           <div style={styles.searchWrapper}>
+             <FiSearch style={styles.searchIcon} size={16} />
+             <input
+               type="text"
+               placeholder="Search users..."
+               value={search}
+               onChange={(e) => setSearch(e.target.value)}
+               style={styles.searchInput}
+             />
+           </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <Table className="theme-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead style={{ width: 48, paddingLeft: 24 }}>
+                  <input type="checkbox" className="custom-checkbox" />
+                </TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Gender</TableHead>
+                <TableHead>Age</TableHead>
+                <TableHead style={{ width: 140, textAlign: 'right', paddingRight: 24 }}></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading &&
+                [...Array(6)].map((_, i) => (
+                  <TableRow key={`sk-${i}`} className="skeleton-row">
+                    <TableCell colSpan={7}>
+                      <div className="skeleton-bar" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+              {!loading &&
+                filtered.map((user, i) => (
+                  <TableRow key={user.id} onClick={() => navigate(`/users/${user.id}`)}>
+                    <TableCell style={{ paddingLeft: 24 }} onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox" 
+                        className="custom-checkbox" 
+                        defaultChecked={i % 2 !== 0}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="user-info-cell">
+                        <img src={user.image} alt={user.firstName} className="user-avatar-img" />
+                        <span className="user-name-text">
+                          {user.firstName} {user.lastName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray">{user.email}</TableCell>
+                    <TableCell className="text-gray">{user.phone}</TableCell>
+                    <TableCell className="text-gray capitalize">{user.gender}</TableCell>
+                    <TableCell className="text-gray">{user.age} Years</TableCell>
+                    <TableCell style={{ paddingRight: 24, textAlign: 'right' }}>
+                      <div className="action-cell">
+                        <button 
+                          className="btn-action-row" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/users/${user.id}`);
+                          }}
+                        >
+                          View details
+                        </button>
+                        <button className="btn-icon" onClick={(e) => e.stopPropagation()}>
+                          <FiMoreVertical size={20} />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+              {!loading && !error && filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="empty-state">
+                    Tidak ada user yang cocok dengan pencarian.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Tambah User Baru"
+      >
+        <p style={{ marginBottom: '20px', color: '#475467' }}>
+          Fitur tambah user belum tersedia. Klik tombol di bawah untuk menutup dialog ini.
+        </p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <Button variant="ghost" onClick={() => setShowAddModal(false)}>
+            Batal
+          </Button>
+          <Button variant="admin" onClick={() => setShowAddModal(false)}>
+            OK
+          </Button>
+        </div>
+      </Modal>
+    </>
+  );
+}
+
+const styles = {
+  searchWrapper: {
+    position: 'relative',
+    width: '100%',
+    maxWidth: '320px',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '14px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: '#9ca3af',
+    pointerEvents: 'none',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '8px 14px 8px 40px',
+    background: '#fff',
+    border: '1px solid #eaecf0',
+    borderRadius: '6px',
+    outline: 'none',
+    fontSize: '14px',
+    color: '#374151',
+  },
+  error: {
+    background: '#fef2f2',
+    color: '#dc2626',
+    padding: '14px 16px',
+    borderRadius: '8px',
+    border: '1px solid #fecaca',
+    marginBottom: '16px',
+    fontSize: '14px',
+  },
+};
+
+const tableStyles = `
+  /* Theme matching the provided image */
+  .table-container {
+    background: #ffffff;
+    border: 1px solid #eaecf0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .table-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px;
+    border-bottom: 1px solid #eaecf0;
+  }
+
+  .table-main-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #101828;
+    margin: 0 0 4px 0;
+  }
+
+  .table-sub-title {
+    font-size: 14px;
+    color: #667085;
+    margin: 0;
+  }
+
+  .btn-download-all-top {
+    background: #7a5af8;
+    color: #ffffff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-download-all-top:hover {
+    background: #6941c6;
+  }
+
+  .table-search-row {
+    padding: 16px 24px;
+    border-bottom: 1px solid #eaecf0;
+    background: #fcfcfd;
+  }
+
+  .theme-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .theme-table thead th {
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #475467;
+    background: #ffffff;
+    border-bottom: 1px solid #eaecf0;
+  }
+
+  .theme-table tbody tr {
+    border-bottom: 1px solid #eaecf0;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .theme-table tbody tr:hover {
+    background: #f9fafb;
+  }
+
+  .theme-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .theme-table tbody td {
+    padding: 16px;
+    font-size: 14px;
+    color: #101828;
+    vertical-align: middle;
+  }
+
+  /* Custom Checkbox */
+  .custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #d0d5dd;
+    border-radius: 4px;
+    cursor: pointer;
+    accent-color: #6941c6;
+  }
+
+  /* User Info Cell */
+  .user-info-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .user-avatar-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f2f4f7;
+    object-fit: cover;
+  }
+
+  .user-name-text {
+    font-weight: 500;
+    color: #101828;
+  }
+
+  /* Text Colors */
+  .text-gray {
+    color: #475467 !important;
+  }
+  
+  .capitalize {
+    text-transform: capitalize;
+  }
+
+  /* Action Buttons */
+  .action-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .btn-action-row {
+    background: #344054;
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-action-row:hover {
+    background: #1d2939;
+  }
+
+  .btn-icon {
+    background: transparent;
+    border: none;
+    color: #98a2b3;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+
+  .btn-icon:hover {
+    background: #f2f4f7;
+    color: #344054;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px !important;
+    color: #667085 !important;
+  }
+
+  /* Skeleton Loading */
+  .skeleton-row td {
+    padding: 20px 16px !important;
+  }
+
+  .skeleton-bar {
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f2f4f7 25%, #eaecf0 50%, #f2f4f7 75%);
+    background-size: 200% 100%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+`;
+
+export default Users;

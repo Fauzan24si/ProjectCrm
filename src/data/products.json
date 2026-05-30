@@ -1,0 +1,272 @@
+[
+  {
+    "id": 1,
+    "title": "Modern Sofa",
+    "code": "SF-001",
+    "category": "Living Room",
+    "brand": "Comfort Plus",
+    "price": 4500000,
+    "stock": 15
+  },
+  {
+    "id": 2,
+    "title": "Wooden Dining Table",
+    "code": "DT-002",
+    "category": "Dining Room",
+    "brand": "Wood Master",
+    "price": 6800000,
+    "stock": 8
+  },
+  {
+    "id": 3,
+    "title": "King Size Bed",
+    "code": "BD-003",
+    "category": "Bedroom",
+    "brand": "Sleep Well",
+    "price": 8500000,
+    "stock": 12
+  },
+  {
+    "id": 4,
+    "title": "Office Chair",
+    "code": "CH-004",
+    "category": "Office",
+    "brand": "Ergo Seat",
+    "price": 2300000,
+    "stock": 25
+  },
+  {
+    "id": 5,
+    "title": "Coffee Table",
+    "code": "CT-005",
+    "category": "Living Room",
+    "brand": "Modern Home",
+    "price": 1800000,
+    "stock": 20
+  },
+  {
+    "id": 6,
+    "title": "Wardrobe Cabinet",
+    "code": "WD-006",
+    "category": "Bedroom",
+    "brand": "Storage Pro",
+    "price": 7200000,
+    "stock": 10
+  },
+  {
+    "id": 7,
+    "title": "TV Stand",
+    "code": "TV-007",
+    "category": "Living Room",
+    "brand": "Media Center",
+    "price": 3500000,
+    "stock": 18
+  },
+  {
+    "id": 8,
+    "title": "Bookshelf",
+    "code": "BS-008",
+    "category": "Office",
+    "brand": "Book Haven",
+    "price": 2800000,
+    "stock": 14
+  },
+  {
+    "id": 9,
+    "title": "Dining Chair Set",
+    "code": "DC-009",
+    "category": "Dining Room",
+    "brand": "Comfort Dine",
+    "price": 3200000,
+    "stock": 22
+  },
+  {
+    "id": 10,
+    "title": "Nightstand",
+    "code": "NS-010",
+    "category": "Bedroom",
+    "brand": "Bedside Plus",
+    "price": 1200000,
+    "stock": 30
+  },
+  {
+    "id": 11,
+    "title": "Recliner Sofa",
+    "code": "RS-011",
+    "category": "Living Room",
+    "brand": "Relax Zone",
+    "price": 5500000,
+    "stock": 9
+  },
+  {
+    "id": 12,
+    "title": "Study Desk",
+    "code": "SD-012",
+    "category": "Office",
+    "brand": "Work Smart",
+    "price": 2600000,
+    "stock": 16
+  },
+  {
+    "id": 13,
+    "title": "Bar Stool",
+    "code": "BS-013",
+    "category": "Dining Room",
+    "brand": "High Seat",
+    "price": 1500000,
+    "stock": 28
+  },
+  {
+    "id": 14,
+    "title": "Dresser Mirror",
+    "code": "DM-014",
+    "category": "Bedroom",
+    "brand": "Reflect Style",
+    "price": 3800000,
+    "stock": 11
+  },
+  {
+    "id": 15,
+    "title": "Console Table",
+    "code": "CN-015",
+    "category": "Living Room",
+    "brand": "Entry Way",
+    "price": 2200000,
+    "stock": 19
+  },
+  {
+    "id": 16,
+    "title": "Filing Cabinet",
+    "code": "FC-016",
+    "category": "Office",
+    "brand": "Organize Pro",
+    "price": 1900000,
+    "stock": 24
+  },
+  {
+    "id": 17,
+    "title": "Buffet Cabinet",
+    "code": "BC-017",
+    "category": "Dining Room",
+    "brand": "Serve Style",
+    "price": 4200000,
+    "stock": 13
+  },
+  {
+    "id": 18,
+    "title": "Ottoman",
+    "code": "OT-018",
+    "category": "Living Room",
+    "brand": "Foot Rest",
+    "price": 1600000,
+    "stock": 26
+  },
+  {
+    "id": 19,
+    "title": "Vanity Table",
+    "code": "VT-019",
+    "category": "Bedroom",
+    "brand": "Beauty Corner",
+    "price": 3300000,
+    "stock": 15
+  },
+  {
+    "id": 20,
+    "title": "Corner Shelf",
+    "code": "CS-020",
+    "category": "Living Room",
+    "brand": "Space Saver",
+    "price": 1400000,
+    "stock": 21
+  },
+  {
+    "id": 21,
+    "title": "Executive Desk",
+    "code": "ED-021",
+    "category": "Office",
+    "brand": "Boss Desk",
+    "price": 5800000,
+    "stock": 7
+  },
+  {
+    "id": 22,
+    "title": "Bench Seat",
+    "code": "BN-022",
+    "category": "Dining Room",
+    "brand": "Long Seat",
+    "price": 2100000,
+    "stock": 17
+  },
+  {
+    "id": 23,
+    "title": "Bunk Bed",
+    "code": "BB-023",
+    "category": "Bedroom",
+    "brand": "Kids Sleep",
+    "price": 6500000,
+    "stock": 10
+  },
+  {
+    "id": 24,
+    "title": "Accent Chair",
+    "code": "AC-024",
+    "category": "Living Room",
+    "brand": "Style Seat",
+    "price": 2900000,
+    "stock": 23
+  },
+  {
+    "id": 25,
+    "title": "Computer Desk",
+    "code": "CD-025",
+    "category": "Office",
+    "brand": "Tech Work",
+    "price": 2400000,
+    "stock": 20
+  },
+  {
+    "id": 26,
+    "title": "Wine Rack",
+    "code": "WR-026",
+    "category": "Dining Room",
+    "brand": "Bottle Store",
+    "price": 1700000,
+    "stock": 18
+  },
+  {
+    "id": 27,
+    "title": "Chest of Drawers",
+    "code": "CD-027",
+    "category": "Bedroom",
+    "brand": "Drawer Plus",
+    "price": 4100000,
+    "stock": 12
+  },
+  {
+    "id": 28,
+    "title": "Sectional Sofa",
+    "code": "SS-028",
+    "category": "Living Room",
+    "brand": "Big Comfort",
+    "price": 9800000,
+    "stock": 6
+  },
+  {
+    "id": 29,
+    "title": "Conference Table",
+    "code": "CT-029",
+    "category": "Office",
+    "brand": "Meeting Pro",
+    "price": 12500000,
+    "stock": 5
+  },
+  {
+    "id": 30,
+    "title": "Kitchen Island",
+    "code": "KI-030",
+    "category": "Dining Room",
+    "brand": "Cook Space",
+    "price": 8900000,
+    "stock": 8
+  }
+]
