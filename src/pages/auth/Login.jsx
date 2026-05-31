@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import InputField from '../../Reusable/InputField';
 import Button from '../../Reusable/Button';
+import { Spinner } from '@/components/ui/spinner';
 
 const Login = () => {
   const [dataForm, setDataForm] = useState({
@@ -76,7 +77,14 @@ const Login = () => {
         </div>
 
         <Button type="submit" variant="primary" disabled={loading} style={styles.fullBtn}>
-          {loading ? 'Signing In...' : 'Sign In'}
+          {loading ? (
+            <span style={styles.btnLoading}>
+              <Spinner style={{ width: 16, height: 16 }} />
+              Signing In...
+            </span>
+          ) : (
+            'Sign In'
+          )}
         </Button>
 
         <Button type="button" variant="ghost" style={styles.fullBtn}>
@@ -126,6 +134,12 @@ const styles = {
   fullBtn: {
     width: '100%',
     padding: '12px',
+  },
+  btnLoading: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
   },
   footerText: {
     marginTop: '40px',
