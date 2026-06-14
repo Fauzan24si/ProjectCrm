@@ -279,7 +279,7 @@ const Dashboard = () => {
             <p className="stat-label">Total Revenue</p>
             <div className="stat-icon revenue"><FiDollarSign /></div>
           </div>
-          <p className="stat-value">$24,560</p>
+          <p className="stat-value">Rp 24.560.000</p>
           <div className="stat-bar"><div className="stat-bar-fill" style={{ width: '72%' }}></div></div>
           <div className="stat-change positive">
             <span>+12.5%</span><span className="muted">vs last month</span>
@@ -347,35 +347,35 @@ const Dashboard = () => {
                   <td className="order-id">#ORD-001</td>
                   <td className="customer-name">John Doe</td>
                   <td className="order-date">Oct 24, 2023</td>
-                  <td className="order-amount">$120.00</td>
+                  <td className="order-amount">Rp 1.800.000</td>
                   <td><span className="status-badge completed">Completed</span></td>
                 </tr>
                 <tr>
                   <td className="order-id">#ORD-002</td>
                   <td className="customer-name">Jane Smith</td>
                   <td className="order-date">Oct 23, 2023</td>
-                  <td className="order-amount">$450.00</td>
+                  <td className="order-amount">Rp 6.750.000</td>
                   <td><span className="status-badge processing">Processing</span></td>
                 </tr>
                 <tr>
                   <td className="order-id">#ORD-003</td>
                   <td className="customer-name">Michael Johnson</td>
                   <td className="order-date">Oct 23, 2023</td>
-                  <td className="order-amount">$89.50</td>
+                  <td className="order-amount">Rp 1.342.500</td>
                   <td><span className="status-badge completed">Completed</span></td>
                 </tr>
                 <tr>
                   <td className="order-id">#ORD-004</td>
                   <td className="customer-name">Emily Davis</td>
                   <td className="order-date">Oct 22, 2023</td>
-                  <td className="order-amount">$210.00</td>
+                  <td className="order-amount">Rp 3.150.000</td>
                   <td><span className="status-badge cancelled">Cancelled</span></td>
                 </tr>
                 <tr>
                   <td className="order-id">#ORD-005</td>
                   <td className="customer-name">William Brown</td>
                   <td className="order-date">Oct 21, 2023</td>
-                  <td className="order-amount">$55.00</td>
+                  <td className="order-amount">Rp 825.000</td>
                   <td><span className="status-badge completed">Completed</span></td>
                 </tr>
               </tbody>
@@ -397,7 +397,7 @@ const Dashboard = () => {
                 <p className="product-category">Stylish cafe chair</p>
               </div>
               <div className="product-price">
-                <p>$2.500.000</p>
+                <p>Rp 2.500.000</p>
                 <p>124 sales</p>
               </div>
             </div>
@@ -409,7 +409,7 @@ const Dashboard = () => {
                 <p className="product-category">Stylish cafe chair</p>
               </div>
               <div className="product-price">
-                <p>$2.500.000</p>
+                <p>Rp 2.500.000</p>
                 <p>98 sales</p>
               </div>
             </div>
@@ -421,7 +421,7 @@ const Dashboard = () => {
                 <p className="product-category">Luxury big sofa</p>
               </div>
               <div className="product-price">
-                <p>$7.000.000</p>
+                <p>Rp 7.000.000</p>
                 <p>74 sales</p>
               </div>
             </div>
@@ -433,7 +433,7 @@ const Dashboard = () => {
                 <p className="product-category">Outdoor bar table and stool</p>
               </div>
               <div className="product-price">
-                <p>$5.000.000</p>
+                <p>Rp 5.000.000</p>
                 <p>52 sales</p>
               </div>
             </div>

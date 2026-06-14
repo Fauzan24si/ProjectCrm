@@ -6,17 +6,17 @@ const HowItWorks = () => {
     {
       icon: <FiLock />,
       title: '1. Purchase Securely',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+      description: 'Pilih furnitur favorit Anda dan lakukan pembayaran dengan aman.'
     },
     {
       icon: <FiBox />,
       title: '2. Ships From Warehouse',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+      description: 'Pesanan Anda kami kemas rapi dan kirim langsung dari gudang.'
     },
     {
       icon: <FiHome />,
       title: '3. Style Your Space',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+      description: 'Tata furnitur baru Anda dan nikmati suasana rumah yang segar.'
     }
   ];
 
@@ -24,7 +24,7 @@ const HowItWorks = () => {
     <FeatureSection style={styles.section}>
       <div className="container text-center">
         <h2 className="section-title">How It Works</h2>
-        <p className="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        <p className="section-subtitle">Belanja furnitur impian Anda hanya dalam tiga langkah mudah.</p>
         
         <div style={styles.grid}>
           {steps.map((step, index) => (
@@ -63,6 +63,8 @@ const styles = {
     fontSize: '48px',
     color: 'var(--primary)',
     marginBottom: '24px',
+    display: 'flex',
+    justifyContent: 'center',
   },
   title: {
     fontSize: '20px',

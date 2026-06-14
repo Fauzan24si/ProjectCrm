@@ -11,7 +11,7 @@ const Inspiration = () => {
     <ProductSection style={styles.section}>
       <div className="container text-center">
         <h2 className="section-title">Inspiration Collection</h2>
-        <p className="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        <p className="section-subtitle">Temukan inspirasi penataan ruang yang elegan dan fungsional untuk rumah Anda.</p>
         
         <div style={styles.grid}>
           {images.map((img, index) => (

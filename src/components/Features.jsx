@@ -7,22 +7,22 @@ const Features = () => {
     {
       icon: <FiTruck />,
       title: 'Free Delivery',
-      description: 'Lorem ipsum dolor sit amet.'
+      description: 'Gratis ongkir untuk pembelian ke seluruh kota besar di Indonesia.'
     },
     {
       icon: <FiHeadphones />,
       title: 'Support 24/7',
-      description: 'Lorem ipsum dolor sit amet.'
+      description: 'Tim layanan pelanggan kami siap membantu kapan pun Anda butuh.'
     },
     {
       icon: <FiCheckCircle />,
       title: '100% Authentic',
-      description: 'Lorem ipsum dolor sit amet.'
+      description: 'Setiap produk dijamin asli dengan kualitas material terbaik.'
     },
     {
       icon: <FiShield />,
       title: 'Secure Payment',
-      description: 'Lorem ipsum dolor sit amet.'
+      description: 'Transaksi aman dengan berbagai metode pembayaran terpercaya.'
     }
   ];
 

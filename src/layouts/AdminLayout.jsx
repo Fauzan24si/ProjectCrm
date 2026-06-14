@@ -1,6 +1,10 @@
 import { Outlet } from 'react-router-dom';
-import { FiSearch, FiBell } from 'react-icons/fi';
+import { useEffect, useState } from 'react';
+import { FiSearch, FiBell, FiMoon, FiSun } from 'react-icons/fi';
 import Sidebar from '../components/Sidebar';
+import { getCurrentUser } from '../services/auth';
+
+const DARK_KEY = 'admin_dark_mode';
 
 const adminLayoutStyles = `
   .admin-root {
@@ -58,7 +62,7 @@ const adminLayoutStyles = `
   .admin-header-right {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 12px;
   }
 
   .admin-notif-btn {
@@ -92,7 +96,8 @@ const adminLayoutStyles = `
     align-items: center;
     gap: 12px;
     border-left: 1px solid #e5e7eb;
-    padding-left: 24px;
+    padding-left: 16px;
+    margin-left: 4px;
     cursor: pointer;
   }
 
@@ -139,36 +144,163 @@ const adminLayoutStyles = `
     .admin-content { padding: 20px; }
     .admin-search-box { width: 200px; }
   }
+
+  /* ---------- Dark mode (hanya area dashboard) ---------- */
+  .admin-root.dark { background: #0f172a; color: #e5e7eb; }
+
+  .admin-root.dark .sidebar {
+    background: #111827;
+    border-right-color: #1f2937;
+    color: #cbd5e1;
+  }
+  .admin-root.dark .nav-item { color: #9ca3af; }
+  .admin-root.dark .nav-item:hover { background: #1f2937; color: #f3f4f6; }
+  .admin-root.dark .nav-item.active { background: #312e81; color: #c4b5fd; }
+  .admin-root.dark .nav-item.active::before { background: #c4b5fd; }
+  .admin-root.dark .nav-item.active .nav-icon { color: #c4b5fd; }
+  .admin-root.dark .profile-email { color: rgba(255,255,255,0.7); }
+
+  .admin-root.dark .admin-header {
+    background: #111827;
+    border-bottom-color: #1f2937;
+  }
+  .admin-root.dark .admin-search-box {
+    background: #1f2937;
+    border-color: #1f2937;
+  }
+  .admin-root.dark .admin-search-box input { color: #e5e7eb; }
+  .admin-root.dark .admin-search-box input::placeholder { color: #6b7280; }
+  .admin-root.dark .admin-notif-btn { color: #9ca3af; }
+  .admin-root.dark .admin-notif-btn:hover { color: #c4b5fd; }
+  .admin-root.dark .admin-notif-dot { border-color: #111827; }
+  .admin-root.dark .admin-profile {
+    border-left-color: #1f2937;
+  }
+  .admin-root.dark .admin-name { color: #f3f4f6; }
+  .admin-root.dark .admin-role { color: #9ca3af; }
+
+  .admin-root.dark .admin-content { background: #0f172a; }
+
+  .admin-root.dark .admin-page-title,
+  .admin-root.dark .table-main-title,
+  .admin-root.dark .member-section-title,
+  .admin-root.dark .greet-name,
+  .admin-root.dark h1,
+  .admin-root.dark h2,
+  .admin-root.dark h3 { color: #f3f4f6; }
+  .admin-root.dark .admin-page-subtitle,
+  .admin-root.dark .table-sub-title,
+  .admin-root.dark .greet-hello,
+  .admin-root.dark .greet-email { color: #94a3b8; }
+
+  /* Generic cards / tables / modals dalam dashboard */
+  .admin-root.dark .table-container,
+  .admin-root.dark .reusable-card,
+  .admin-root.dark .member-section,
+  .admin-root.dark .action-card,
+  .admin-root.dark .info-item-icon,
+  .admin-root.dark .stat-card,
+  .admin-root.dark .card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #e5e7eb;
+  }
+  .admin-root.dark .table-search-row { background: #0f172a; border-bottom-color: #334155; }
+  .admin-root.dark .theme-table thead th { background: #1e293b; color: #cbd5e1; border-bottom-color: #334155; }
+  .admin-root.dark .theme-table tbody tr { border-bottom-color: #334155; }
+  .admin-root.dark .theme-table tbody tr:hover { background: #273449; }
+  .admin-root.dark .theme-table tbody td,
+  .admin-root.dark .text-gray { color: #cbd5e1 !important; }
+  .admin-root.dark .user-name-text,
+  .admin-root.dark .prod-name-text { color: #f3f4f6; }
+
+  .admin-root.dark .info-item-label { color: #94a3b8; }
+  .admin-root.dark .info-item-value { color: #f3f4f6; }
+  .admin-root.dark .info-item-icon { background: #334155; color: #c4b5fd; }
+  .admin-root.dark .action-card-icon { background: #312e81; color: #c4b5fd; }
+  .admin-root.dark .action-card-body p { color: #94a3b8; }
+
+  .admin-root.dark .btn-icon { color: #94a3b8; }
+  .admin-root.dark .btn-icon:hover { background: #334155; color: #f3f4f6; }
+  .admin-root.dark .btn-icon--danger:hover { background: #7f1d1d; color: #fecaca; }
+
+  /* Tombol toggle dark mode di header */
+  .admin-theme-toggle {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #6b7280;
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+  }
+  .admin-theme-toggle:hover { background: #F4F5F7; color: #054C73; }
+  .admin-root.dark .admin-theme-toggle {
+    color: #fde68a;
+  }
+  .admin-root.dark .admin-theme-toggle:hover { background: #1f2937; }
 `;
 
 const AdminLayout = () => {
+  const session = getCurrentUser();
+  const displayName = session?.name || 'Admin User';
+  const displayRole = session?.role === 'admin' ? 'Super Admin' : 'Member';
+  const avatarBg = session?.role === 'admin' ? '054C73' : '6E39CB';
+  const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=${avatarBg}&color=fff`;
+
+  const [dark, setDark] = useState(() => {
+    try {
+      return localStorage.getItem(DARK_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DARK_KEY, dark ? '1' : '0');
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [dark]);
+
   return (
     <>
       <style>{adminLayoutStyles}</style>
-      <div className="admin-root">
+      <div className={`admin-root${dark ? ' dark' : ''}`}>
         <Sidebar />
 
         <div className="admin-main">
           <header className="admin-header">
             <div className="admin-search-box">
-              <FiSearch style={{ color: '#9ca3af', fontSize: 18, flexShrink: 0 }} />
+              <FiSearch style={{ fontSize: 18, flexShrink: 0 }} />
               <input type="text" placeholder="Search anything here..." />
             </div>
 
             <div className="admin-header-right">
+              <button
+                type="button"
+                className="admin-theme-toggle"
+                onClick={() => setDark((v) => !v)}
+                title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {dark ? <FiSun size={18} /> : <FiMoon size={18} />}
+              </button>
               <button className="admin-notif-btn">
                 <FiBell />
                 <span className="admin-notif-dot"></span>
               </button>
               <div className="admin-profile">
                 <img
-                  src="https://ui-avatars.com/api/?name=Admin+User&background=054C73&color=fff"
-                  alt="Admin"
+                  src={avatar}
+                  alt={displayName}
                   className="admin-avatar"
                 />
                 <div>
-                  <p className="admin-name">Admin User</p>
-                  <p className="admin-role">Super Admin</p>
+                  <p className="admin-name">{displayName}</p>
+                  <p className="admin-role">{displayRole}</p>
                 </div>
               </div>
             </div>
