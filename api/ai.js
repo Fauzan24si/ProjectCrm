@@ -21,9 +21,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Method Not Allowed' } });
   }
 
-  const target = process.env.AI_PROXY_TARGET;
-  const apiKey = process.env.AI_API_KEY;
-  const defaultModel = process.env.AI_MODEL;
+  // Terima nama tanpa prefix (disarankan) maupun dengan prefix VITE_
+  // agar kompatibel dengan env yang sudah terlanjur di-set di Vercel.
+  const target = process.env.AI_PROXY_TARGET || process.env.VITE_AI_PROXY_TARGET;
+  const apiKey = process.env.AI_API_KEY || process.env.VITE_AI_API_KEY;
+  const defaultModel = process.env.AI_MODEL || process.env.VITE_AI_MODEL;
 
   if (!target || !apiKey) {
     return res.status(500).json({
