@@ -139,7 +139,7 @@ function MemberDashboard() {
             icon={<FiHeart />}
             title="Wishlist"
             desc="Simpan produk favorit untuk dibeli nanti."
-            to="/shop"
+            to="/member/wishlist"
           />
           <ActionCard
             icon={<FiUser />}

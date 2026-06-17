@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiShoppingCart, FiSearch, FiTrash2, FiPlus, FiMinus, FiX } from 'react-icons/fi';
 import { getProducts } from '../../services/products';
 import { useCart } from '../../context/CartContext';
 import { formatRupiah } from '../../lib/membership';
 
 function Shop() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -96,7 +98,12 @@ function Shop() {
 
           {!loading &&
             filtered.map((p) => (
-              <div key={p.id} className="shop-card">
+              <div
+                key={p.id}
+                className="shop-card"
+                onClick={() => navigate(`/shop/${p.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="shop-card-img">
                   <img src={p.thumbnail} alt={p.title} loading="lazy" />
                   {p.discount_percentage > 0 && (
@@ -110,7 +117,10 @@ function Shop() {
                     <span className="shop-card-price">{formatRupiah(p.price)}</span>
                     <button
                       className="shop-add-btn"
-                      onClick={() => addItem(p)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addItem(p);
+                      }}
                       title="Tambah ke keranjang"
                     >
                       <FiShoppingCart size={15} />
