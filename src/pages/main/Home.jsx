@@ -4,6 +4,9 @@ import Inspiration from '../../components/Inspiration';
 import BeautifySpace from '../../components/BeautifySpace';
 import BrowseRange from '../../components/BrowseRange';
 import HowItWorks from '../../components/HowItWorks';
+import Faq from '../../components/Faq';
+import Testimonials from '../../components/Testimonials';
+import MediaPartners from '../../components/MediaPartners';
 
 const Home = () => {
   return (
@@ -14,6 +17,9 @@ const Home = () => {
       <BeautifySpace />
       <BrowseRange />
       <HowItWorks />
+      <Faq />
+      <Testimonials />
+      <MediaPartners />
     </>
   );
 };
