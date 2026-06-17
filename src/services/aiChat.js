@@ -47,12 +47,16 @@ export async function sendChat(messages, { maxTokens = 512, signal } = {}) {
   });
 
   if (!response.ok) {
-    let detail = '';
+    // Baca body SEKALI sebagai teks, lalu coba parse jadi JSON.
+    // Membaca body dua kali (response.json() lalu response.text())
+    // memicu error "body stream already read".
+    const rawErr = await response.text();
+    let detail = rawErr;
     try {
-      const errBody = await response.json();
+      const errBody = JSON.parse(rawErr);
       detail = errBody.error?.message || JSON.stringify(errBody);
     } catch {
-      detail = await response.text();
+      // Bukan JSON; pakai teks mentah apa adanya.
     }
     throw new Error(`AI request gagal (${response.status}): ${detail}`);
   }
