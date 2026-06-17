@@ -1,20 +1,26 @@
 /**
- * Service untuk AI Chat menggunakan endpoint OpenAI-compatible
- * (AWS Bedrock Mantle).
+ * Service untuk AI Chat menggunakan endpoint OpenAI-compatible.
  *
- * Konfigurasi diambil dari .env:
- *   VITE_AI_BASE_URL  - base URL endpoint (mis. https://bedrock-mantle.us-east-1.api.aws/v1)
+ * Dua mode jalan:
+ *  - DEVELOPMENT (`npm run dev`): memanggil proxy Vite di `/ai-api/v1`
+ *    (lihat vite.config.js) dengan API key dari .env. Proxy Vite hanya
+ *    aktif di mode dev.
+ *  - PRODUCTION (Vercel): memanggil serverless function `/api/ai`
+ *    (lihat api/ai.js). API key disimpan di server (env Vercel: AI_API_KEY),
+ *    sehingga TIDAK bocor ke browser.
+ *
+ * Konfigurasi .env untuk dev:
+ *   VITE_AI_BASE_URL  - base URL endpoint via proxy (mis. /ai-api/v1)
  *   VITE_AI_API_KEY   - API key
- *   VITE_AI_MODEL     - nama model (mis. openai.gpt-oss-120b)
- *
- * CATATAN KEAMANAN:
- * Memanggil API ini langsung dari browser akan mengekspos API key ke client.
- * Untuk production, sebaiknya proxy lewat backend agar key tidak bocor.
+ *   VITE_AI_MODEL     - nama model
  */
 
 const BASE_URL = import.meta.env.VITE_AI_BASE_URL;
 const API_KEY = import.meta.env.VITE_AI_API_KEY;
 const MODEL = import.meta.env.VITE_AI_MODEL || 'openai.gpt-oss-120b';
+
+// Saat production (build di Vercel) pakai serverless function sebagai proxy.
+const IS_PROD = import.meta.env.PROD;
 
 /**
  * Kirim daftar pesan ke model dan dapatkan balasan.
@@ -25,24 +31,34 @@ const MODEL = import.meta.env.VITE_AI_MODEL || 'openai.gpt-oss-120b';
  * @returns {Promise<string>} konten balasan asisten
  */
 export async function sendChat(messages, { maxTokens = 512, signal } = {}) {
-  if (!BASE_URL || !API_KEY) {
-    throw new Error(
-      'Konfigurasi AI belum lengkap. Set VITE_AI_BASE_URL dan VITE_AI_API_KEY di .env'
-    );
+  const body = {
+    model: MODEL,
+    messages,
+    max_tokens: maxTokens,
+    stream: false,
+  };
+
+  let url;
+  const headers = { 'Content-Type': 'application/json' };
+
+  if (IS_PROD) {
+    // Production: lewat serverless function. Key ditambahkan di server.
+    url = '/api/ai';
+  } else {
+    // Development: lewat proxy Vite, key dikirim dari client.
+    if (!BASE_URL || !API_KEY) {
+      throw new Error(
+        'Konfigurasi AI belum lengkap. Set VITE_AI_BASE_URL dan VITE_AI_API_KEY di .env'
+      );
+    }
+    url = `${BASE_URL}/chat/completions`;
+    headers.Authorization = `Bearer ${API_KEY}`;
   }
 
-  const response = await fetch(`${BASE_URL}/chat/completions`, {
+  const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      max_tokens: maxTokens,
-      stream: false,
-    }),
+    headers,
+    body: JSON.stringify(body),
     signal,
   });
 
