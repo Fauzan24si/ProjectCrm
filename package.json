@@ -7,13 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:admin": "node supabase/seedAdmin.js"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
     "axios": "^1.15.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "embla-carousel-autoplay": "^8.6.0",
+    "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.17.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.5",

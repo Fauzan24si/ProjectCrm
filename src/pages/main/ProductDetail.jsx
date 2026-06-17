@@ -1,9 +1,10 @@
 import { useParams, Link } from "react-router-dom"
 import { useEffect, useState } from "react"
-import axios from "axios"
 import { FiArrowLeft, FiStar } from "react-icons/fi"
 import Card from "../../Reusable/Card"
 import Loading from "../../Reusable/Loading"
+import { getProduct } from "../../services/products"
+import { formatRupiah } from "../../lib/membership"
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -11,17 +12,16 @@ export default function ProductDetail() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    axios
-      .get(`https://dummyjson.com/products/${id}`)
-      .then((response) => {
-        if (response.status !== 200) {
-          setError(response.message)
+    getProduct(id)
+      .then((data) => {
+        if (!data) {
+          setError("Produk tidak ditemukan")
           return
         }
-        setProduct(response.data)
+        setProduct(data)
       })
       .catch((err) => {
-        setError(err.message)
+        setError(err.response?.data?.message || err.message)
       })
   }, [id])
 
@@ -46,7 +46,7 @@ export default function ProductDetail() {
 
             <div style={styles.ratingRow}>
               <FiStar style={{ color: '#f59e0b', fill: '#f59e0b' }} />
-              <span style={styles.ratingText}>{product.rating}</span>
+              <span style={styles.ratingText}>{product.rating ?? '-'}</span>
               <span style={styles.brandText}>· {product.brand || 'Premium Brand'}</span>
             </div>
 
@@ -55,7 +55,7 @@ export default function ProductDetail() {
             <div style={styles.priceBox}>
               <span style={styles.priceLabel}>Harga</span>
               <span style={styles.price}>
-                Rp {(product.price * 15000).toLocaleString('id-ID')}
+                {formatRupiah(product.price)}
               </span>
             </div>
 
@@ -70,7 +70,7 @@ export default function ProductDetail() {
               </div>
               <div style={styles.metaItem}>
                 <span style={styles.metaLabel}>Diskon</span>
-                <span style={styles.metaValue}>{product.discountPercentage}%</span>
+                <span style={styles.metaValue}>{product.discount_percentage ?? 0}%</span>
               </div>
             </div>
           </div>

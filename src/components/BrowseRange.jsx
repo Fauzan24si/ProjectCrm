@@ -11,7 +11,7 @@ const BrowseRange = () => {
     <ProductSection style={styles.section}>
       <div className="container">
         <h2 className="section-title">Browse The Range</h2>
-        <p className="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        <p className="section-subtitle">Jelajahi beragam koleksi furnitur kami untuk setiap sudut ruangan.</p>
         
         <div style={styles.grid}>
           {categories.map((cat, index) => (

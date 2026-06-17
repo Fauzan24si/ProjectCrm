@@ -5,10 +5,14 @@ import {
   FiBox,
   FiUsers,
   FiTrendingUp,
-  FiMoreVertical
+  FiMoreVertical,
+  FiAward,
+  FiShoppingBag,
+  FiHeart,
 } from 'react-icons/fi';
 import SidebarReusable from '../Reusable/Sidebar';
 import NavItem from '../Reusable/NavItem';
+import { getCurrentUser, logout } from '../services/auth';
 
 const sidebarStyles = `
   .sidebar {
@@ -165,6 +169,13 @@ const sidebarStyles = `
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const session = getCurrentUser();
+  const isAdmin = session?.role === 'admin';
+
+  const handleSignout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <>
@@ -175,51 +186,82 @@ const Sidebar = () => {
         </div>
 
         <nav className="sidebar-nav">
-          <NavLink to="/admin/dashboard" end className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-            <FiGrid className="nav-icon" />
-            <span>Dashboard</span>
-          </NavLink>
-          
-          <NavLink to="/users" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-            <FiUser className="nav-icon" />
-            <span>Users</span>
-          </NavLink>
-          
-          <NavLink to="/products" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-            <FiBox className="nav-icon" />
-            <span>Products</span>
-          </NavLink>
-          
-          <NavLink to="/customers/1" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-            <FiUsers className="nav-icon" />
-            <span>Customer</span>
-          </NavLink>
-          
-          <NavItem
-            onClick={() => navigate('/sales-report')}
-            icon={<FiTrendingUp className="nav-icon" />}
-            className="nav-item"
-            style={{ cursor: 'pointer' }}
-          >
-            Sales Report
-          </NavItem>
+          {isAdmin ? (
+            <>
+              <NavLink to="/admin/dashboard" end className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiGrid className="nav-icon" />
+                <span>Dashboard</span>
+              </NavLink>
+
+              <NavLink to="/users" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiUser className="nav-icon" />
+                <span>Users</span>
+              </NavLink>
+
+              <NavLink to="/products" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiBox className="nav-icon" />
+                <span>Products</span>
+              </NavLink>
+
+              <NavLink to="/customers" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiUsers className="nav-icon" />
+                <span>Customer</span>
+              </NavLink>
+
+              <NavItem
+                onClick={() => navigate('/sales-report')}
+                icon={<FiTrendingUp className="nav-icon" />}
+                className="nav-item"
+                style={{ cursor: 'pointer' }}
+              >
+                Sales Report
+              </NavItem>
+            </>
+          ) : (
+            <>
+              <NavLink to="/member" end className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiGrid className="nav-icon" />
+                <span>Dashboard</span>
+              </NavLink>
+
+              <NavLink to="/member/membership" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiAward className="nav-icon" />
+                <span>Membership</span>
+              </NavLink>
+
+              <NavLink to="/shop" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiShoppingBag className="nav-icon" />
+                <span>Belanja</span>
+              </NavLink>
+
+              <NavLink to="/member/wishlist" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiHeart className="nav-icon" />
+                <span>Wishlist</span>
+              </NavLink>
+
+              <NavLink to="/member/profile" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+                <FiUser className="nav-icon" />
+                <span>Profil</span>
+              </NavLink>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-footer">
           <div className="profile-widget">
-            <img 
-              src="https://ui-avatars.com/api/?name=Admin+User&background=f9fafb&color=101828" 
-              alt="Admin" 
-              className="profile-avatar" 
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(session?.name || (isAdmin ? 'Admin' : 'Member'))}&background=f9fafb&color=101828`}
+              alt={session?.name || 'User'}
+              className="profile-avatar"
             />
             <div className="profile-info">
-              <h4 className="profile-name">Admin User</h4>
-              <p className="profile-email">admin@furniture.com</p>
+              <h4 className="profile-name">{session?.name || (isAdmin ? 'Admin User' : 'Member')}</h4>
+              <p className="profile-email">{session?.email || ''}</p>
             </div>
-            <button 
-              className="profile-menu-btn" 
-              onClick={() => navigate('/login')}
-              title="Signout"
+            <button
+              className="profile-menu-btn"
+              onClick={handleSignout}
+              title="Sign out"
             >
               <FiMoreVertical size={18} />
             </button>

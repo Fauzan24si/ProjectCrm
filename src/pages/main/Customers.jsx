@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMoreVertical, FiSearch } from 'react-icons/fi';
-import Modal from '../../Reusable/Modal';
-import Button from '../../Reusable/Button';
 import {
   Table,
   TableHeader,
@@ -26,20 +24,19 @@ function MembershipBadge({ membership }) {
   );
 }
 
-function Users() {
-  const [users, setUsers] = useState([]);
+function Customers() {
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
-    getUsers({ limit: 100, role: 'admin' })
+    getUsers({ limit: 100, role: 'user' })
       .then((data) => {
         if (!active) return;
-        setUsers(data);
+        setCustomers(data);
         setLoading(false);
       })
       .catch((err) => {
@@ -52,7 +49,7 @@ function Users() {
     };
   }, []);
 
-  const filtered = users.filter((u) => {
+  const filtered = customers.filter((u) => {
     const q = search.toLowerCase();
     return (
       (u.name || '').toLowerCase().includes(q) ||
@@ -64,42 +61,36 @@ function Users() {
     <>
       <style>{tableStyles}</style>
 
-      {error && (
-        <div style={styles.error}>Gagal memuat data: {error}</div>
-      )}
+      {error && <div style={styles.error}>Gagal memuat data: {error}</div>}
 
       <div className="table-container">
         <div className="table-header-section">
           <div>
-            <h1 className="table-main-title">Users list</h1>
+            <h1 className="table-main-title">Customers</h1>
             <p className="table-sub-title">
-              Daftar admin yang mengelola sistem.
+              Daftar pelanggan beserta tier membership mereka.
             </p>
           </div>
-          <button className="btn-download-all-top" onClick={() => setShowAddModal(true)}>Add user</button>
         </div>
 
         <div className="table-search-row">
-           <div style={styles.searchWrapper}>
-             <FiSearch style={styles.searchIcon} size={16} />
-             <input
-               type="text"
-               placeholder="Search users..."
-               value={search}
-               onChange={(e) => setSearch(e.target.value)}
-               style={styles.searchInput}
-             />
-           </div>
+          <div style={styles.searchWrapper}>
+            <FiSearch style={styles.searchIcon} size={16} />
+            <input
+              type="text"
+              placeholder="Cari customer..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.searchInput}
+            />
+          </div>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
           <Table className="theme-table">
             <TableHeader>
               <TableRow>
-                <TableHead style={{ width: 48, paddingLeft: 24 }}>
-                  <input type="checkbox" className="custom-checkbox" />
-                </TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead style={{ paddingLeft: 24 }}>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Total Transaksi</TableHead>
@@ -111,23 +102,16 @@ function Users() {
               {loading &&
                 [...Array(6)].map((_, i) => (
                   <TableRow key={`sk-${i}`} className="skeleton-row">
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={6}>
                       <div className="skeleton-bar" />
                     </TableCell>
                   </TableRow>
                 ))}
 
               {!loading &&
-                filtered.map((user, i) => (
-                  <TableRow key={user.id} onClick={() => navigate(`/users/${user.id}`)}>
-                    <TableCell style={{ paddingLeft: 24 }} onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        className="custom-checkbox"
-                        defaultChecked={i % 2 !== 0}
-                      />
-                    </TableCell>
-                    <TableCell>
+                filtered.map((user) => (
+                  <TableRow key={user.id} onClick={() => navigate(`/customers/${user.id}`)}>
+                    <TableCell style={{ paddingLeft: 24 }}>
                       <div className="user-info-cell">
                         <img
                           src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=DFE9F4&color=054C73`}
@@ -149,7 +133,7 @@ function Users() {
                           className="btn-action-row"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/users/${user.id}`);
+                            navigate(`/customers/${user.id}`);
                           }}
                         >
                           View details
@@ -164,8 +148,8 @@ function Users() {
 
               {!loading && !error && filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="empty-state">
-                    Tidak ada user yang cocok dengan pencarian.
+                  <TableCell colSpan={6} className="empty-state">
+                    Belum ada customer yang cocok dengan pencarian.
                   </TableCell>
                 </TableRow>
               )}
@@ -173,24 +157,6 @@ function Users() {
           </Table>
         </div>
       </div>
-
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        title="Tambah User Baru"
-      >
-        <p style={{ marginBottom: '20px', color: '#475467' }}>
-          User baru dibuat melalui halaman registrasi. Arahkan calon pengguna ke halaman Sign Up.
-        </p>
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <Button variant="ghost" onClick={() => setShowAddModal(false)}>
-            Batal
-          </Button>
-          <Button variant="admin" onClick={() => setShowAddModal(false)}>
-            OK
-          </Button>
-        </div>
-      </Modal>
     </>
   );
 }
@@ -261,22 +227,6 @@ const tableStyles = `
     margin: 0;
   }
 
-  .btn-download-all-top {
-    background: #7a5af8;
-    color: #ffffff;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .btn-download-all-top:hover {
-    background: #6941c6;
-  }
-
   .table-search-row {
     padding: 16px 24px;
     border-bottom: 1px solid #eaecf0;
@@ -319,15 +269,6 @@ const tableStyles = `
     vertical-align: middle;
   }
 
-  .custom-checkbox {
-    width: 18px;
-    height: 18px;
-    border: 1px solid #d0d5dd;
-    border-radius: 4px;
-    cursor: pointer;
-    accent-color: #6941c6;
-  }
-
   .user-info-cell {
     display: flex;
     align-items: center;
@@ -349,10 +290,6 @@ const tableStyles = `
 
   .text-gray {
     color: #475467 !important;
-  }
-
-  .capitalize {
-    text-transform: capitalize;
   }
 
   .membership-badge {
@@ -428,4 +365,4 @@ const tableStyles = `
   }
 `;
 
-export default Users;
+export default Customers;
