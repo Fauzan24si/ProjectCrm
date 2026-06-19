@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import InputField from '../../Reusable/InputField';
 import Button from '../../Reusable/Button';
 import { Spinner } from '@/components/ui/spinner';
 import { register } from '../../services/auth';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 
 const Register = () => {
   const [dataForm, setDataForm] = useState({
@@ -15,7 +16,13 @@ const Register = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'Create Account | FurniCRM';
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +62,7 @@ const Register = () => {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Create account</h2>
-      <p style={styles.subtitle}>Please fill in your details to sign up</p>
+      <p style={styles.subtitle}>Please fill in your details to sign up.</p>
 
       <form onSubmit={handleSubmit} style={styles.form}>
         {error && <div style={styles.error}>{error}</div>}
@@ -69,36 +76,60 @@ const Register = () => {
           onChange={handleChange}
           placeholder="Enter your name"
           required
+          leftIcon={<FiUser />}
         />
 
         <InputField
-          label="Email"
+          label="Email Address"
           type="email"
           name="email"
           value={dataForm.email}
           onChange={handleChange}
           placeholder="Enter your email"
           required
+          leftIcon={<FiMail />}
         />
 
         <InputField
           label="Password"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           name="password"
           value={dataForm.password}
           onChange={handleChange}
-          placeholder="............"
+          placeholder="Enter password"
           required
+          leftIcon={<FiLock />}
+          rightElement={
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={styles.eyeBtn}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+            </button>
+          }
         />
 
         <InputField
           label="Confirm Password"
-          type="password"
+          type={showConfirmPassword ? 'text' : 'password'}
           name="confirmPassword"
           value={dataForm.confirmPassword}
           onChange={handleChange}
-          placeholder="............"
+          placeholder="Confirm password"
           required
+          leftIcon={<FiLock />}
+          rightElement={
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={styles.eyeBtn}
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+            >
+              {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+            </button>
+          }
         />
 
         <Button type="submit" variant="primary" disabled={loading} style={styles.fullBtn}>
@@ -126,24 +157,26 @@ const styles = {
     fontFamily: 'Inter, sans-serif',
   },
   title: {
-    fontSize: '26px',
+    fontSize: '30px',
     fontWeight: '700',
-    color: '#111827',
+    color: '#0f172a',
     margin: '0 0 8px 0',
+    letterSpacing: '-0.5px',
   },
   subtitle: {
-    fontSize: '13px',
-    color: '#9CA3AF',
-    margin: '0 0 32px 0',
+    fontSize: '14.5px',
+    color: '#64748b',
+    margin: '0 0 28px 0',
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: '14px',
   },
   fullBtn: {
     width: '100%',
-    padding: '12px',
+    padding: '12.5px',
+    fontSize: '15px',
   },
   btnLoading: {
     display: 'inline-flex',
@@ -152,15 +185,15 @@ const styles = {
     gap: '8px',
   },
   footerText: {
-    marginTop: '40px',
+    marginTop: '32px',
     textAlign: 'center',
-    fontSize: '12px',
-    color: '#9CA3AF',
+    fontSize: '13.5px',
+    color: '#64748b',
   },
   cyanLink: {
-    color: '#4FC3F7',
+    color: '#6e39cb',
     textDecoration: 'none',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   error: {
     backgroundColor: '#fef2f2',
@@ -178,6 +211,17 @@ const styles = {
     fontSize: '13px',
     border: '1px solid #bbf7d0',
   },
+  eyeBtn: {
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: '#667085',
+    outline: 'none',
+  }
 };
 
 export default Register;

@@ -1,4 +1,5 @@
 import { FiInstagram } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import Footer from '../Reusable/Footer';
 import Container from '../Reusable/Container';
 
@@ -18,10 +19,10 @@ const FooterSection = () => {
           <div style={styles.column}>
             <h4 style={styles.heading}>Links</h4>
             <ul style={styles.list}>
-              <li><a href="#" style={styles.link}>Home</a></li>
-              <li><a href="#" style={styles.link}>Shop</a></li>
-              <li><a href="#" style={styles.link}>About</a></li>
-              <li><a href="#" style={styles.link}>Contact</a></li>
+              <li><Link to="/" style={styles.link}>Home</Link></li>
+              <li><Link to="/shop" style={styles.link}>Shop</Link></li>
+              <li><Link to="/about" style={styles.link}>About</Link></li>
+              <li><Link to="/contact" style={styles.link}>Contact</Link></li>
             </ul>
           </div>
 

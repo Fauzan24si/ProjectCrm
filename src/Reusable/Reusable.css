@@ -166,6 +166,53 @@
   color: #344054;
 }
 
+.reusable-input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.reusable-input-wrapper.has-left-icon .reusable-input {
+  padding-left: 40px;
+}
+
+.reusable-input-wrapper.has-right-element .reusable-input {
+  padding-right: 40px;
+}
+
+.reusable-input-icon-left {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #667085;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 16px;
+}
+
+.reusable-input-element-right {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #667085;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.reusable-input-element-right:hover {
+  color: #101828;
+}
+
 .reusable-input,
 .reusable-select {
   width: 100%;

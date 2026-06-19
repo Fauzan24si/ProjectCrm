@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
@@ -14,6 +14,8 @@ import { WishlistProvider } from './context/WishlistContext';
 // Lazy load pages
 const Home = React.lazy(() => import('./pages/main/Home'));
 const Shop = React.lazy(() => import('./pages/main/Shop'));
+const About = React.lazy(() => import('./pages/main/About'));
+const Contact = React.lazy(() => import('./pages/main/Contact'));
 const ShopProductDetail = React.lazy(() => import('./pages/main/ShopProductDetail'));
 const Login = React.lazy(() => import('./pages/auth/Login'));
 const Register = React.lazy(() => import('./pages/auth/Register'));
@@ -42,6 +44,8 @@ function App() {
                   <Route index element={<Home />} />
                   <Route path="shop" element={<Shop />} />
                   <Route path="shop/:id" element={<ShopProductDetail />} />
+                  <Route path="about" element={<About />} />
+                  <Route path="contact" element={<Contact />} />
                 </Route>
 
                 <Route element={<AuthLayout />}>
@@ -76,12 +80,22 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-            <ChatWidget />
+            <ChatWidgetWrapper />
           </WishlistProvider>
         </CartProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );
 }
+
+// A wrapper to hide ChatWidget on auth screens
+const ChatWidgetWrapper = () => {
+  const location = useLocation();
+  const hidePaths = ['/login', '/register'];
+  if (hidePaths.includes(location.pathname)) {
+    return null;
+  }
+  return <ChatWidget />;
+};
 
 export default App;

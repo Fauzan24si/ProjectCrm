@@ -42,7 +42,7 @@ function Shop() {
     };
   }, []);
 
-  const filtered = products.filter((p) => {
+  const filtered = (Array.isArray(products) ? products : []).filter((p) => {
     const q = search.toLowerCase();
     return (
       p.title?.toLowerCase().includes(q) ||

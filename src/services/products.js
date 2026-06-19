@@ -29,7 +29,8 @@ export async function getProducts({ limit = 50, offset = 0 } = {}) {
     },
   });
   // Bentuk respons disamakan { products } agar kompatibel dengan pemakaian lama.
-  return { products: res.data || [] };
+  // Pastikan selalu array; PostgREST bisa mengembalikan objek (mis. error) pada kasus tertentu.
+  return { products: Array.isArray(res.data) ? res.data : [] };
 }
 
 /** Ambil satu produk berdasarkan id. */

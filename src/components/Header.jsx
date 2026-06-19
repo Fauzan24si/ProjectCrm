@@ -50,8 +50,28 @@ const HeaderSection = () => {
                 Shop
               </NavLink>
             </li>
-            <li><a href="#" style={styles.navLink}>About</a></li>
-            <li><a href="#" style={styles.navLink}>Contact</a></li>
+            <li>
+              <NavLink
+                to="/about"
+                style={({ isActive }) => ({
+                  ...styles.navLink,
+                  fontWeight: isActive ? 600 : 400,
+                })}
+              >
+                About
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/contact"
+                style={({ isActive }) => ({
+                  ...styles.navLink,
+                  fontWeight: isActive ? 600 : 400,
+                })}
+              >
+                Contact
+              </NavLink>
+            </li>
           </ul>
         </nav>
 
