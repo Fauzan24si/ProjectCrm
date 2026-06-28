@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FiShoppingCart, FiSearch, FiTrash2, FiPlus, FiMinus, FiX } from 'react-icons/fi';
 import { getProducts } from '../../services/products';
 import { useCart } from '../../context/CartContext';
 import { formatRupiah } from '../../lib/membership';
+import { getCurrentUser } from '../../services/auth';
+import { getUser } from '../../services/users';
+import { createTransaction } from '../../services/payment';
 
 function Shop() {
   const navigate = useNavigate();
@@ -13,9 +16,58 @@ function Shop() {
   const [search, setSearch] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
   const [cartLoading, setCartLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [feedback, setFeedback] = useState(null); // { type, message }
 
   const { items, addItem, removeItem, updateQty, clearCart, totalItems, totalPrice } =
     useCart();
+
+  const session = getCurrentUser();
+  const isGuest = !session;
+
+  const handleCheckout = async () => {
+    // Wajib login untuk melakukan order.
+    if (!session) {
+      navigate('/login', { state: { from: '/shop' } });
+      return;
+    }
+
+    setProcessing(true);
+    setFeedback(null);
+
+    try {
+      // Ambil alamat & no HP penerima dari profil.
+      const profile = await getUser(session.id);
+      if (!profile?.address || !profile?.phone) {
+        setProcessing(false);
+        setFeedback({
+          type: 'error',
+          message: 'Lengkapi alamat & no HP penerima di menu Alamat sebelum checkout.',
+        });
+        return;
+      }
+
+      const customer = {
+        id: session?.id || null,
+        name: session?.name || 'Guest',
+        email: session?.email || '',
+        phone: profile.phone,
+        address: profile.address,
+      };
+
+      // Konfirmasi pesanan: buat invoice (order pending) di server.
+      const { orderId } = await createTransaction({ items, customer });
+      sessionStorage.setItem('last_order_id', orderId);
+      clearCart();
+      setCartOpen(false);
+      setProcessing(false);
+      // Order masih pending: arahkan ke halaman konfirmasi pembayaran.
+      navigate(`/payment/confirm?order_id=${orderId}`);
+    } catch (err) {
+      setProcessing(false);
+      setFeedback({ type: 'error', message: err.message });
+    }
+  };
 
   // Tampilkan skeleton singkat tiap kali drawer keranjang dibuka.
   const openCart = () => {
@@ -119,7 +171,12 @@ function Shop() {
                       className="shop-add-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        addItem(p);
+                        // Produk dengan varian harus dipilih dulu di halaman detail.
+                        if (Array.isArray(p.variants) && p.variants.length > 0) {
+                          navigate(`/shop/${p.id}`);
+                        } else {
+                          addItem(p);
+                        }
                       }}
                       title="Tambah ke keranjang"
                     >
@@ -166,22 +223,23 @@ function Shop() {
 
           {!cartLoading &&
             items.map((item) => (
-              <div key={item.id} className="cart-item">
+              <div key={item.key} className="cart-item">
                 <img src={item.thumbnail} alt={item.title} className="cart-item-img" />
                 <div className="cart-item-info">
                   <p className="cart-item-title">{item.title}</p>
+                  {item.variant && <p className="cart-item-variant">{item.variant}</p>}
                   <p className="cart-item-price">{formatRupiah(item.price)}</p>
                   <div className="cart-qty">
-                    <button onClick={() => updateQty(item.id, item.qty - 1)}>
+                    <button onClick={() => updateQty(item.key, item.qty - 1)}>
                       <FiMinus size={13} />
                     </button>
                     <span>{item.qty}</span>
-                    <button onClick={() => updateQty(item.id, item.qty + 1)}>
+                    <button onClick={() => updateQty(item.key, item.qty + 1)}>
                       <FiPlus size={13} />
                     </button>
                   </div>
                 </div>
-                <button className="cart-item-del" onClick={() => removeItem(item.id)}>
+                <button className="cart-item-del" onClick={() => removeItem(item.key)}>
                   <FiTrash2 size={16} />
                 </button>
               </div>
@@ -194,7 +252,31 @@ function Shop() {
               <span>Total</span>
               <strong>{formatRupiah(totalPrice)}</strong>
             </div>
-            <button className="cart-checkout">Checkout</button>
+
+            {isGuest && (
+              <p className="cart-guest-note">
+                Anda harus <Link to="/login">masuk</Link> terlebih dahulu untuk
+                melakukan order.
+              </p>
+            )}
+
+            {feedback && (
+              <div className={`cart-feedback cart-feedback-${feedback.type}`}>
+                {feedback.message}
+              </div>
+            )}
+
+            <button
+              className="cart-checkout"
+              onClick={handleCheckout}
+              disabled={processing}
+            >
+              {processing
+                ? 'Memproses...'
+                : isGuest
+                  ? 'Masuk untuk Checkout'
+                  : 'Konfirmasi Pesanan'}
+            </button>
             <button className="cart-clear" onClick={clearCart}>
               Kosongkan keranjang
             </button>
@@ -529,6 +611,7 @@ const shopStyles = `
   }
 
   .cart-item-price { font-size: 13px; color: var(--primary); font-weight: 700; margin: 0 0 8px; }
+  .cart-item-variant { font-size: 11px; color: #667085; margin: 2px 0 4px; }
 
   .cart-qty {
     display: inline-flex;
@@ -619,6 +702,25 @@ const shopStyles = `
     cursor: pointer;
     font-family: inherit;
   }
+  .cart-checkout:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .cart-guest-note {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: #667085;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .cart-feedback {
+    margin-bottom: 12px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+  }
+  .cart-feedback-success { background: #ecfdf3; color: #067647; border: 1px solid #abefc6; }
+  .cart-feedback-pending { background: #fffaeb; color: #b54708; border: 1px solid #fedf89; }
+  .cart-feedback-error { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
 
   .cart-clear {
     width: 100%;

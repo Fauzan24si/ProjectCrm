@@ -16,7 +16,7 @@ const dashboardStyles = `
     padding: 22px 20px 18px;
     border-radius: 14px;
     border: 1px solid #EDEDF0;
-    box-shadow: 0 2px 8px rgba(110, 57, 203, 0.05);
+    box-shadow: 0 2px 8px rgba(16, 24, 40, 0.05);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -26,7 +26,7 @@ const dashboardStyles = `
 
   .stat-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(110, 57, 203, 0.12);
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
   }
 
   .stat-card-top {
@@ -56,7 +56,7 @@ const dashboardStyles = `
 
   .stat-card:hover .stat-icon { transform: scale(1.08); }
 
-  .stat-icon.revenue   { background: #EDE4F9; color: #6E39CB; }
+  .stat-icon.revenue   { background: #f2f4f7; color: #101828; }
   .stat-icon.orders    { background: #FFF3E0; color: #E67E22; }
   .stat-icon.customers { background: #E8F5E9; color: #2E7D32; }
   .stat-icon.conversion{ background: #E3F2FD; color: #1565C0; }
@@ -80,7 +80,7 @@ const dashboardStyles = `
   .stat-bar-fill {
     height: 100%;
     border-radius: 4px;
-    background: linear-gradient(90deg, #9B6EE0 0%, #6E39CB 100%);
+    background: linear-gradient(90deg, #9B6EE0 0%, #101828 100%);
   }
 
   .stat-change {
@@ -107,7 +107,7 @@ const dashboardStyles = `
     background: #fff;
     border-radius: 14px;
     border: 1px solid #EDEDF0;
-    box-shadow: 0 2px 8px rgba(110, 57, 203, 0.05);
+    box-shadow: 0 2px 8px rgba(16, 24, 40, 0.05);
     padding: 22px;
   }
 
@@ -127,7 +127,7 @@ const dashboardStyles = `
 
   .view-all-btn {
     font-size: 13px;
-    color: #6E39CB;
+    color: #101828;
     font-weight: 600;
     background: none;
     border: none;
@@ -139,7 +139,7 @@ const dashboardStyles = `
   }
 
   .view-all-btn:hover {
-    background: #EDE4F9;
+    background: #f2f4f7;
     opacity: 1;
   }
 
@@ -155,7 +155,7 @@ const dashboardStyles = `
     align-items: center;
   }
 
-  .more-btn:hover { background: #F0EAFA; color: #6E39CB; }
+  .more-btn:hover { background: #f2f4f7; color: #101828; }
 
   /* Table */
   .orders-table {
@@ -183,7 +183,7 @@ const dashboardStyles = `
   .orders-table tbody tr:hover { background: #F7F6FB; }
   .orders-table tbody td { padding: 13px 0; font-size: 14px; }
   .orders-table .order-id { font-weight: 700; color: #3A3541; }
-  .orders-table tbody tr:hover .order-id { color: #6E39CB; }
+  .orders-table tbody tr:hover .order-id { color: #101828; }
   .orders-table .customer-name { color: #3A3541; }
   .orders-table .order-date { color: #89868D; }
   .orders-table .order-amount { font-weight: 700; color: #3A3541; }
@@ -197,7 +197,7 @@ const dashboardStyles = `
   }
 
   .status-badge.completed  { background: #E8F5E9; color: #2E7D32; }
-  .status-badge.processing { background: #EDE4F9; color: #6E39CB; }
+  .status-badge.processing { background: #f2f4f7; color: #101828; }
   .status-badge.cancelled  { background: #FDECEA; color: #C62828; }
 
   /* Product Row */
@@ -221,7 +221,7 @@ const dashboardStyles = `
     border-radius: 10px;
     object-fit: cover;
     flex-shrink: 0;
-    background: #F0EAFA;
+    background: #f2f4f7;
     transition: transform 0.2s;
   }
 
@@ -239,7 +239,7 @@ const dashboardStyles = `
     transition: color 0.15s;
   }
 
-  .product-row:hover .product-name { color: #6E39CB; }
+  .product-row:hover .product-name { color: #101828; }
 
   .product-category {
     font-size: 12px;
@@ -251,7 +251,7 @@ const dashboardStyles = `
   }
 
   .product-price { text-align: right; flex-shrink: 0; }
-  .product-price p:first-child { font-size: 14px; font-weight: 700; color: #6E39CB; margin: 0; }
+  .product-price p:first-child { font-size: 14px; font-weight: 700; color: #101828; margin: 0; }
   .product-price p:last-child  { font-size: 11px; color: #B4B2B7; margin: 2px 0 0; }
 
   @media (max-width: 1200px) {

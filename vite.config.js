@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      // Izinkan akses lewat tunnel ngrok (URL-nya berubah-ubah tiap sesi).
+      // '.ngrok-free.dev' mencakup semua subdomain ngrok-free.dev.
+      allowedHosts: ['.ngrok-free.dev', '.ngrok-free.app', '.ngrok.io'],
       proxy: {
         // Request dari browser ke /ai-api/* diteruskan ke server AI.
         // Karena same-origin, browser tidak melakukan CORS preflight.

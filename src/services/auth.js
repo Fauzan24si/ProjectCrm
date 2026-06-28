@@ -66,6 +66,46 @@ export async function login({ email, password }) {
 }
 
 /**
+ * Kirim OTP registrasi ke email (via serverless /api/auth/send-otp -> Resend).
+ * @param {string} email
+ */
+export async function sendRegisterOtp(email) {
+  const res = await fetch('/api/auth/send-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase() }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Gagal mengirim OTP.');
+  }
+  return data;
+}
+
+/**
+ * Verifikasi OTP & buat akun (via serverless /api/auth/verify-otp).
+ * Setelah sukses, user otomatis di-set sebagai sesi login.
+ * @returns {Promise<object>} user (tanpa password)
+ */
+export async function verifyRegisterOtp({ name, email, password, otp }) {
+  const res = await fetch('/api/auth/verify-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password,
+      otp,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Verifikasi OTP gagal.');
+  }
+  return sanitizeUser(data.user);
+}
+
+/**
  * Logout: hapus sesi lokal.
  */
 export function logout() {

@@ -247,7 +247,7 @@ const AdminLayout = () => {
   const session = getCurrentUser();
   const displayName = session?.name || 'Admin User';
   const displayRole = session?.role === 'admin' ? 'Super Admin' : 'Member';
-  const avatarBg = session?.role === 'admin' ? '054C73' : '6E39CB';
+  const avatarBg = session?.role === 'admin' ? '054C73' : '101828';
   const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=${avatarBg}&color=fff`;
 
   const [dark, setDark] = useState(() => {

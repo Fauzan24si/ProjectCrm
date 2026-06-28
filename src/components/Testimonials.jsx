@@ -1,59 +1,32 @@
+import { useEffect, useState } from 'react';
 import { FiStar } from 'react-icons/fi';
+import { getTestimonials } from '../services/testimonials';
 
-const testimonials = [
+// Fallback statis dipakai bila data dari Supabase belum tersedia / kosong,
+// agar tampilan landing tetap terisi (desain tidak berubah).
+const fallbackTestimonials = [
   {
-    name: 'Rina Wijaya',
+    customer_name: 'Rina Wijaya',
     role: 'Interior Enthusiast',
     rating: 5,
-    comment:
+    content:
       'Kualitas sofanya jauh di atas ekspektasi. Bahannya kokoh dan jahitannya rapi. Pengiriman juga cepat sampai Bandung!',
-    initial: 'R',
   },
   {
-    name: 'Andre Kurniawan',
+    customer_name: 'Andre Kurniawan',
     role: 'Pemilik Kafe',
     rating: 5,
-    comment:
+    content:
       'Beli meja dan kursi untuk kafe saya. Desainnya elegan dan pelanggan banyak yang memuji. Pasti pesan lagi di sini.',
-    initial: 'A',
   },
   {
-    name: 'Siti Nurhaliza',
+    customer_name: 'Siti Nurhaliza',
     role: 'Ibu Rumah Tangga',
     rating: 4,
-    comment:
+    content:
       'Lemari penyimpanannya luas dan kuat. Perakitannya mudah karena panduan lengkap. Sangat memuaskan untuk harganya.',
-    initial: 'S',
-  },
-  {
-    name: 'Budi Santoso',
-    role: 'Arsitek',
-    rating: 5,
-    comment:
-      'Sebagai arsitek, saya sangat memperhatikan detail. Furnitur di sini punya finishing premium yang sulit ditemukan di tempat lain.',
-    initial: 'B',
-  },
-  {
-    name: 'Maya Lestari',
-    role: 'Content Creator',
-    rating: 5,
-    comment:
-      'Estetik banget buat dekorasi rumah. Warnanya persis seperti di foto dan nggak gampang pudar. Recommended!',
-    initial: 'M',
-  },
-  {
-    name: 'Doni Pratama',
-    role: 'Karyawan Swasta',
-    rating: 4,
-    comment:
-      'Kursi kerjanya nyaman dipakai berjam-jam. Customer service juga responsif waktu saya tanya stok. Top!',
-    initial: 'D',
   },
 ];
-
-const averageRating = (
-  testimonials.reduce((sum, t) => sum + t.rating, 0) / testimonials.length
-).toFixed(1);
 
 const Stars = ({ count }) => (
   <div style={styles.stars}>
@@ -71,6 +44,28 @@ const Stars = ({ count }) => (
 );
 
 const Testimonials = () => {
+  const [items, setItems] = useState(fallbackTestimonials);
+
+  useEffect(() => {
+    let active = true;
+    getTestimonials()
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          setItems(data);
+        }
+      })
+      .catch(() => {
+        // Biarkan fallback statis bila fetch gagal.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const averageRating = (
+    items.reduce((sum, t) => sum + (t.rating || 0), 0) / (items.length || 1)
+  ).toFixed(1);
+
   return (
     <section style={styles.section}>
       <div className="container text-center">
@@ -88,15 +83,25 @@ const Testimonials = () => {
         </div>
 
         <div style={styles.grid}>
-          {testimonials.map((t, index) => (
-            <div key={index} style={styles.card}>
+          {items.map((t, index) => (
+            <div key={t.id ?? index} style={styles.card}>
               <Stars count={t.rating} />
-              <p style={styles.comment}>"{t.comment}"</p>
+              <p style={styles.comment}>"{t.content}"</p>
               <div style={styles.author}>
-                <div style={styles.avatar}>{t.initial}</div>
+                <div style={styles.avatar}>
+                  {t.avatar ? (
+                    <img
+                      src={t.avatar}
+                      alt={t.customer_name}
+                      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    (t.customer_name || '?').charAt(0).toUpperCase()
+                  )}
+                </div>
                 <div style={styles.authorInfo}>
-                  <span style={styles.name}>{t.name}</span>
-                  <span style={styles.role}>{t.role}</span>
+                  <span style={styles.name}>{t.customer_name}</span>
+                  {t.role && <span style={styles.role}>{t.role}</span>}
                 </div>
               </div>
             </div>

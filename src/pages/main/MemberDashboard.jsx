@@ -8,10 +8,19 @@ import {
   FiHeart,
   FiUser,
   FiArrowRight,
+  FiStar,
+  FiCheck,
+  FiBox,
 } from 'react-icons/fi';
 import { getCurrentUser } from '../../services/auth';
 import { getUser } from '../../services/users';
-import { getMembershipMeta, formatRupiah } from '../../lib/membership';
+import { getMembership, getMembershipMeta, formatRupiah } from '../../lib/membership';
+import { calculatePoints, formatPoints, getTierBenefits } from '../../lib/loyalty';
+import {
+  getOrdersByUser,
+  summarizeOrders,
+  getOrderStatusMeta,
+} from '../../services/orders';
 
 const TIER_THRESHOLDS = {
   bronze: { next: 'Silver', target: 500_000 },
@@ -21,6 +30,7 @@ const TIER_THRESHOLDS = {
 
 function MemberDashboard() {
   const [user, setUser] = useState(null);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -33,9 +43,15 @@ function MemberDashboard() {
     }
 
     getUser(session.id)
-      .then((data) => {
-        if (!data) setError('Data member tidak ditemukan.');
-        else setUser(data);
+      .then(async (data) => {
+        if (!data) {
+          setError('Data member tidak ditemukan.');
+        } else {
+          setUser(data);
+          // Ambil riwayat pesanan berdasarkan user_id dari Supabase.
+          const userOrders = await getOrdersByUser(data.id);
+          setOrders(userOrders);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -61,15 +77,20 @@ function MemberDashboard() {
     );
   }
 
-  const meta = getMembershipMeta(user.membership);
-  const tierInfo = TIER_THRESHOLDS[user.membership] || TIER_THRESHOLDS.bronze;
-  const totalSpent = Number(user.total_spent) || 0;
+  const orderSummary = summarizeOrders(orders);
+  const totalSpent = orderSummary.totalSpent;
+  const currentTier = getMembership(totalSpent);
+  const meta = getMembershipMeta(currentTier);
+  const tierInfo = TIER_THRESHOLDS[currentTier] || TIER_THRESHOLDS.bronze;
   const remainingToNext =
     tierInfo.target != null ? Math.max(tierInfo.target - totalSpent, 0) : 0;
   const progressPct =
     tierInfo.target != null
       ? Math.min((totalSpent / tierInfo.target) * 100, 100)
       : 100;
+
+  const points = calculatePoints(totalSpent);
+  const benefits = getTierBenefits(currentTier);
 
   return (
     <>
@@ -127,6 +148,40 @@ function MemberDashboard() {
           </div>
         </div>
 
+        {/* Reward Points & Order Stats */}
+        <div className="member-stats-grid">
+          <div className="stat-card stat-card-accent">
+            <div className="stat-icon">
+              <FiStar />
+            </div>
+            <div>
+              <span className="stat-label">Poin Reward</span>
+              <p className="stat-value">{formatPoints(points)} pts</p>
+              <span className="stat-hint">100 poin / Rp 10.000 belanja</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon stat-icon-muted">
+              <FiBox />
+            </div>
+            <div>
+              <span className="stat-label">Total Pesanan</span>
+              <p className="stat-value">{orderSummary.totalOrders}</p>
+              <span className="stat-hint">{orderSummary.completedOrders} selesai</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon stat-icon-muted">
+              <FiShoppingBag />
+            </div>
+            <div>
+              <span className="stat-label">Item Dibeli</span>
+              <p className="stat-value">{orderSummary.totalItems}</p>
+              <span className="stat-hint">dari pesanan selesai</span>
+            </div>
+          </div>
+        </div>
+
         {/* Quick Actions */}
         <div className="member-actions-grid">
           <ActionCard
@@ -147,6 +202,67 @@ function MemberDashboard() {
             desc="Kelola informasi profil dan kontak."
             to="/member/profile"
           />
+        </div>
+
+        {/* Order History */}
+        <div className="member-section">
+          <h3 className="member-section-title">Riwayat Pesanan</h3>
+          {orders.length === 0 ? (
+            <div className="orders-empty">
+              <FiBox size={28} />
+              <p>Belum ada pesanan. Yuk mulai belanja!</p>
+              <Link to="/shop" className="orders-empty-btn">
+                Lihat Katalog
+              </Link>
+            </div>
+          ) : (
+            <div className="orders-list">
+              {orders.map((order) => {
+                const statusMeta = getOrderStatusMeta(order.status);
+                return (
+                  <div key={order.id} className="order-row">
+                    <div className="order-main">
+                      <span className="order-product">{order.product}</span>
+                      <span className="order-meta">
+                        {order.id} &middot; {order.qty} item &middot;{' '}
+                        {new Date(order.date).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <div className="order-side">
+                      <span className="order-total">{formatRupiah(order.total)}</span>
+                      <span
+                        className="order-status"
+                        style={{ color: statusMeta.color, background: statusMeta.bg }}
+                      >
+                        {statusMeta.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Tier Benefits */}
+        <div className="member-section">
+          <h3 className="member-section-title">
+            Keuntungan Member {meta.label}
+          </h3>
+          <ul className="benefits-list">
+            {benefits.map((benefit, i) => (
+              <li key={i} className="benefit-item">
+                <span className="benefit-check">
+                  <FiCheck />
+                </span>
+                {benefit}
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Profile Snapshot */}
@@ -420,6 +536,156 @@ const memberStyles = `
   @media (max-width: 640px) {
     .member-card-tier { font-size: 26px; }
     .member-card-amount { font-size: 22px; }
+  }
+
+  /* --- Reward points & order stats --- */
+  .member-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    background: #fff;
+    border: 1px solid #eaecf0;
+    border-radius: 14px;
+  }
+  .stat-card-accent {
+    background: linear-gradient(135deg, #054C73, #0A6FA0);
+    border-color: transparent;
+    color: #fff;
+  }
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .stat-icon-muted {
+    background: #DFE9F4;
+    color: #054C73;
+  }
+  .stat-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+    font-weight: 600;
+  }
+  .stat-value {
+    margin: 2px 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .stat-card:not(.stat-card-accent) .stat-value { color: #101828; }
+  .stat-card:not(.stat-card-accent) .stat-label { color: #98a2b3; }
+  .stat-hint {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+  .stat-card:not(.stat-card-accent) .stat-hint { color: #667085; }
+
+  /* --- Order history --- */
+  .member-section + .member-section { margin-top: 20px; }
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .order-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .order-row:last-child { border-bottom: none; }
+  .order-main { display: flex; flex-direction: column; min-width: 0; }
+  .order-product {
+    font-size: 14px;
+    font-weight: 600;
+    color: #101828;
+  }
+  .order-meta {
+    font-size: 12px;
+    color: #98a2b3;
+    margin-top: 2px;
+  }
+  .order-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .order-total {
+    font-size: 14px;
+    font-weight: 700;
+    color: #101828;
+  }
+  .order-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+  .orders-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 32px 16px;
+    color: #98a2b3;
+    text-align: center;
+  }
+  .orders-empty p { margin: 0; font-size: 14px; }
+  .orders-empty-btn {
+    margin-top: 6px;
+    padding: 8px 18px;
+    background: #054C73;
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* --- Tier benefits --- */
+  .benefits-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #344054;
+  }
+  .benefit-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #ECFDF3;
+    color: #067647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
   }
 `;
 

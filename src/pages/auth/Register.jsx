@@ -3,8 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import InputField from '../../Reusable/InputField';
 import Button from '../../Reusable/Button';
 import { Spinner } from '@/components/ui/spinner';
-import { register } from '../../services/auth';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
+import { sendRegisterOtp, verifyRegisterOtp, setCurrentUser } from '../../services/auth';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft } from 'react-icons/fi';
 
 const Register = () => {
   const [dataForm, setDataForm] = useState({
@@ -13,9 +18,12 @@ const Register = () => {
     password: '',
     confirmPassword: '',
   });
+  const [step, setStep] = useState('form'); // 'form' | 'otp'
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -24,6 +32,7 @@ const Register = () => {
     document.title = 'Create Account | FurniCRM';
   }, []);
 
+  // Langkah 1: validasi form lalu kirim OTP ke email.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -40,17 +49,58 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await register({
+      await sendRegisterOtp(dataForm.email);
+      setStep('otp');
+      setSuccess(`Kode verifikasi telah dikirim ke ${dataForm.email}.`);
+    } catch (err) {
+      setError(err.message || 'Gagal mengirim kode verifikasi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Langkah 2: verifikasi OTP & buat akun.
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (otp.length !== 6) {
+      setError('Masukkan 6 digit kode OTP.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const user = await verifyRegisterOtp({
         name: dataForm.name,
         email: dataForm.email,
         password: dataForm.password,
+        otp,
       });
-      setSuccess('Registrasi berhasil! Mengarahkan ke halaman login...');
-      setTimeout(() => navigate('/login'), 1200);
+      // Langsung login: simpan sesi lalu arahkan ke dashboard member.
+      setCurrentUser(user);
+      setSuccess('Verifikasi berhasil! Mengarahkan...');
+      setTimeout(() => navigate('/member'), 900);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Terjadi kesalahan saat registrasi');
+      setError(err.message || 'Verifikasi OTP gagal.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setSuccess('');
+    setResending(true);
+    try {
+      await sendRegisterOtp(dataForm.email);
+      setOtp('');
+      setSuccess('Kode baru telah dikirim.');
+    } catch (err) {
+      setError(err.message || 'Gagal mengirim ulang kode.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -58,6 +108,56 @@ const Register = () => {
     const { name, value } = e.target;
     setDataForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  if (step === 'otp') {
+    return (
+      <div style={styles.container}>
+        <button type="button" onClick={() => { setStep('form'); setError(''); setSuccess(''); }} style={styles.backBtn}>
+          <FiArrowLeft size={15} /> Kembali
+        </button>
+        <h2 style={styles.title}>Verifikasi Email</h2>
+        <p style={styles.subtitle}>
+          Masukkan 6 digit kode yang dikirim ke <strong>{dataForm.email}</strong>.
+        </p>
+
+        <form onSubmit={handleVerify} style={styles.form}>
+          {error && <div style={styles.error}>{error}</div>}
+          {success && <div style={styles.success}>{success}</div>}
+
+          <div style={styles.otpWrap}>
+            <InputOTP maxLength={6} value={otp} onChange={(v) => setOtp(v.replace(/\D/g, ''))} autoFocus>
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+
+          <Button type="submit" variant="primary" disabled={loading || otp.length !== 6} style={styles.fullBtn}>
+            {loading ? (
+              <span style={styles.btnLoading}>
+                <Spinner style={{ width: 16, height: 16 }} />
+                Memverifikasi...
+              </span>
+            ) : (
+              'Verifikasi & Daftar'
+            )}
+          </Button>
+        </form>
+
+        <p style={styles.footerText}>
+          Tidak menerima kode?{' '}
+          <button type="button" onClick={handleResend} disabled={resending} style={styles.linkBtn}>
+            {resending ? 'Mengirim...' : 'Kirim ulang'}
+          </button>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -136,10 +236,10 @@ const Register = () => {
           {loading ? (
             <span style={styles.btnLoading}>
               <Spinner style={{ width: 16, height: 16 }} />
-              Creating account...
+              Mengirim kode...
             </span>
           ) : (
-            'Sign Up'
+            'Lanjut'
           )}
         </Button>
       </form>
@@ -191,9 +291,36 @@ const styles = {
     color: '#64748b',
   },
   cyanLink: {
-    color: '#6e39cb',
+    color: '#101828',
     textDecoration: 'none',
     fontWeight: '600',
+  },
+  otpWrap: {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '8px 0 4px',
+  },
+  backBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'transparent',
+    border: 'none',
+    color: '#64748b',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: 0,
+    marginBottom: '16px',
+  },
+  linkBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#101828',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: 0,
+    fontSize: '13.5px',
   },
   error: {
     backgroundColor: '#fef2f2',

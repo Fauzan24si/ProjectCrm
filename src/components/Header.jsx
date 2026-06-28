@@ -72,6 +72,17 @@ const HeaderSection = () => {
                 Contact
               </NavLink>
             </li>
+            <li>
+              <NavLink
+                to="/track"
+                style={({ isActive }) => ({
+                  ...styles.navLink,
+                  fontWeight: isActive ? 600 : 400,
+                })}
+              >
+                Lacak Order
+              </NavLink>
+            </li>
           </ul>
         </nav>
 

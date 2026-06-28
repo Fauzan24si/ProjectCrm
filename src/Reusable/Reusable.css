@@ -59,8 +59,8 @@
 }
 
 .reusable-nav-item--active {
-  background-color: #ebe4ff;
-  color: #6e39cb;
+  background-color: #f2f4f7;
+  color: #101828;
   font-weight: 600;
 }
 
@@ -124,7 +124,7 @@
 
 /* Variant: admin (warna ungu untuk halaman admin) */
 .reusable-btn--admin {
-  background-color: #6e39cb;
+  background-color: #101828;
   color: #ffffff;
 }
 
@@ -228,8 +228,8 @@
 
 .reusable-input:focus,
 .reusable-select:focus {
-  border-color: #6e39cb;
-  box-shadow: 0 0 0 3px rgba(110, 57, 203, 0.15);
+  border-color: #101828;
+  box-shadow: 0 0 0 3px rgba(16, 24, 40, 0.15);
 }
 
 /* ---------- 5. Feedback ---------- */

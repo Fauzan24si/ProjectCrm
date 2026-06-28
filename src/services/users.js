@@ -27,7 +27,7 @@ const TABLE = '/users';
 
 // Field aman untuk ditampilkan (tanpa password).
 const PUBLIC_FIELDS =
-  'id,name,email,role,phone,gender,age,image,total_spent,membership,created_at';
+  'id,name,email,role,phone,gender,age,image,address,total_spent,membership,created_at';
 
 /** Sisipkan membership terhitung ke objek user. */
 function withMembership(user) {

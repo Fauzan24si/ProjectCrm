@@ -6,6 +6,12 @@ import { formatRupiah } from '../../lib/membership';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { isAuthenticated } from '../../services/auth';
+import {
+  normalizeVariants,
+  variantUnitPrice,
+  isSelectionComplete,
+  defaultSelection,
+} from '../../lib/variants';
 
 export default function ShopProductDetail() {
   const { id } = useParams();
@@ -13,6 +19,7 @@ export default function ShopProductDetail() {
   const [product, setProduct] = useState(null);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState('');
+  const [selection, setSelection] = useState({});
 
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -27,6 +34,7 @@ export default function ShopProductDetail() {
           return;
         }
         setProduct(data);
+        setSelection(defaultSelection(data.variants));
       })
       .catch((err) => {
         if (active) setError(err.response?.data?.message || err.message);
@@ -63,6 +71,18 @@ export default function ShopProductDetail() {
 
   const inWishlist = isInWishlist(product.id);
   const loggedIn = isAuthenticated();
+  const variantGroups = normalizeVariants(product.variants);
+  const unitPrice = variantUnitPrice(product.price, product.variants, selection);
+  const selectionComplete = isSelectionComplete(product.variants, selection);
+
+  const handleAddToCart = () => {
+    if (!selectionComplete) {
+      showNotice('Pilih semua varian terlebih dahulu.');
+      return;
+    }
+    addItem(product, 1, selection);
+    showNotice('Ditambahkan ke keranjang!');
+  };
 
   return (
     <div style={styles.wrap}>
@@ -97,8 +117,43 @@ export default function ShopProductDetail() {
 
             <div style={styles.priceBox}>
               <span style={styles.priceLabel}>Harga</span>
-              <span style={styles.price}>{formatRupiah(product.price)}</span>
+              <span style={styles.price}>{formatRupiah(unitPrice)}</span>
             </div>
+
+            {variantGroups.length > 0 && (
+              <div style={styles.variantWrap}>
+                {variantGroups.map((group) => (
+                  <div key={group.name} style={styles.variantGroup}>
+                    <span style={styles.variantName}>{group.name}</span>
+                    <div style={styles.variantOptions}>
+                      {group.options.map((opt) => {
+                        const active = selection[group.name] === opt.label;
+                        return (
+                          <button
+                            key={opt.label}
+                            type="button"
+                            style={{
+                              ...styles.variantChip,
+                              ...(active ? styles.variantChipActive : {}),
+                            }}
+                            onClick={() =>
+                              setSelection((prev) => ({ ...prev, [group.name]: opt.label }))
+                            }
+                          >
+                            {opt.label}
+                            {opt.priceDelta > 0 && (
+                              <span style={styles.variantDelta}>
+                                +{formatRupiah(opt.priceDelta)}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div style={styles.metaGrid}>
               <div style={styles.metaItem}>
@@ -118,10 +173,7 @@ export default function ShopProductDetail() {
             <div style={styles.actions}>
               <button
                 style={styles.cartBtn}
-                onClick={() => {
-                  addItem(product);
-                  showNotice('Ditambahkan ke keranjang!');
-                }}
+                onClick={handleAddToCart}
               >
                 <FiShoppingCart size={17} /> Tambah ke Keranjang
               </button>
@@ -249,6 +301,30 @@ const styles = {
   },
   priceLabel: { fontSize: '12px', color: '#054C73', fontWeight: 600 },
   price: { fontSize: '24px', fontWeight: 800, color: '#054C73' },
+  variantWrap: { display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' },
+  variantGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  variantName: { fontSize: '13px', fontWeight: 700, color: '#374151' },
+  variantOptions: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+  variantChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '10px',
+    background: '#fff',
+    color: '#374151',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  variantChipActive: {
+    borderColor: '#054C73',
+    background: '#DFE9F4',
+    color: '#054C73',
+  },
+  variantDelta: { fontSize: '11px', fontWeight: 600, opacity: 0.8 },
   metaGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',

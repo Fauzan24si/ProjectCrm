@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import InputField from '../../Reusable/InputField';
 import Button from '../../Reusable/Button';
 import { Spinner } from '@/components/ui/spinner';
@@ -15,6 +15,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  // Halaman asal sebelum diarahkan ke login (mis. dari checkout).
+  const from = location.state?.from;
 
   useEffect(() => {
     document.title = 'Sign In | FurniCRM';
@@ -27,7 +30,12 @@ const Login = () => {
 
     try {
       const user = await login({ email: dataForm.email, password: dataForm.password });
-      navigate(user.role === 'admin' ? '/admin/dashboard' : '/member');
+      // Admin selalu ke dashboard. User lain: kembali ke halaman asal jika ada.
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate(from || '/member');
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Terjadi kesalahan saat login');
     } finally {
@@ -190,12 +198,12 @@ const styles = {
     fontWeight: '700',
     letterSpacing: '0.5px',
     textTransform: 'uppercase',
-    color: '#6e39cb',
+    color: '#101828',
     display: 'flex',
     alignItems: 'center',
   },
   guestFillBtn: {
-    background: '#6e39cb',
+    background: '#101828',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
@@ -232,7 +240,7 @@ const styles = {
   },
   forgotLink: {
     fontSize: '13px',
-    color: '#6e39cb',
+    color: '#101828',
     textDecoration: 'none',
     fontWeight: '600',
     transition: 'color 0.2s',
@@ -261,7 +269,7 @@ const styles = {
     color: '#64748b',
   },
   cyanLink: {
-    color: '#6e39cb',
+    color: '#101828',
     textDecoration: 'none',
     fontWeight: '600',
   },

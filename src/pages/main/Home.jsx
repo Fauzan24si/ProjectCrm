@@ -1,6 +1,6 @@
 import Hero from '../../components/Hero';
 import Features from '../../components/Features';
-import Inspiration from '../../components/Inspiration';
+import FeaturedProducts from '../../components/FeaturedProducts';
 import BeautifySpace from '../../components/BeautifySpace';
 import BrowseRange from '../../components/BrowseRange';
 import HowItWorks from '../../components/HowItWorks';
@@ -13,7 +13,7 @@ const Home = () => {
     <>
       <Hero />
       <Features />
-      <Inspiration />
+      <FeaturedProducts />
       <BeautifySpace />
       <BrowseRange />
       <HowItWorks />
