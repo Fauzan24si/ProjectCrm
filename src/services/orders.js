@@ -90,6 +90,110 @@ export async function getAllOrders() {
   return (res.data || []).map(normalizeOrder);
 }
 
+/**
+ * Statistik dashboard admin dari view `admin_dashboard_stats` (satu baris).
+ * @returns {Promise<{total_revenue:number,total_orders:number,total_customers:number,conversion_rate:number}>}
+ */
+export async function getDashboardStats() {
+  const res = await supabase.get('/admin_dashboard_stats', {
+    params: { select: '*', limit: 1 },
+  });
+  const row = Array.isArray(res.data) ? res.data[0] : res.data;
+  return {
+    total_revenue: Number(row?.total_revenue) || 0,
+    total_orders: Number(row?.total_orders) || 0,
+    total_customers: Number(row?.total_customers) || 0,
+    conversion_rate: Number(row?.conversion_rate) || 0,
+  };
+}
+
+/**
+ * Produk terlaris dari view `admin_top_products` (order lunas).
+ * @param {number} limit
+ * @returns {Promise<Array<{product_id,title,total_qty,total_revenue}>>}
+ */
+export async function getTopProducts(limit = 4) {
+  const res = await supabase.get('/admin_top_products', {
+    params: { select: '*', limit },
+  });
+  return (res.data || []).map((r) => ({
+    productId: r.product_id,
+    title: r.title,
+    totalQty: Number(r.total_qty) || 0,
+    totalRevenue: Number(r.total_revenue) || 0,
+  }));
+}
+
+/**
+ * Order terbaru untuk panel "Recent Orders" di dashboard.
+ * @param {number} limit
+ * @returns {Promise<Array>} order yang sudah dinormalisasi
+ */
+export async function getRecentOrders(limit = 5) {
+  const res = await supabase.get('/orders', {
+    params: {
+      select: '*,order_items(*)',
+      order: 'created_at.desc',
+      limit,
+    },
+  });
+  return (res.data || []).map(normalizeOrder);
+}
+
+/**
+ * Data untuk halaman Sales Report (dari Supabase, menggantikan sales.json).
+ * Mengembalikan satu baris per ORDER (bukan per item), dengan field yang
+ * dipetakan agar cocok dengan tabel existing.
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.status]   - filter status order (lowercase DB) atau 'all'
+ * @param {string} [opts.dateFrom] - ISO date (inklusif)
+ * @param {string} [opts.dateTo]   - ISO date (inklusif)
+ * @returns {Promise<Array>}
+ */
+export async function getSalesReport({ status, dateFrom, dateTo } = {}) {
+  const params = {
+    select: '*,order_items(*)',
+    order: 'created_at.desc',
+  };
+  if (status && status !== 'all') params.status = `eq.${status}`;
+  if (dateFrom) params.created_at = `gte.${dateFrom}`;
+  // PostgREST tidak mendukung dua filter pada kolom yang sama via objek params
+  // sederhana; untuk rentang penuh dipfilter di sisi client bila dateTo diisi.
+
+  const res = await supabase.get('/orders', { params });
+  let rows = (res.data || []).map(normalizeOrder);
+
+  if (dateTo) {
+    const to = new Date(dateTo).getTime();
+    rows = rows.filter((r) => new Date(r.date).getTime() <= to);
+  }
+  return rows;
+}
+
+/**
+ * Ambil satu order detail untuk halaman Order Detail admin.
+ * Menerima order_number (string "ORD-...") maupun id numerik.
+ *
+ * @param {string|number} idOrOrderNumber
+ * @returns {Promise<object|null>} order ternormalisasi atau null
+ */
+export async function getOrderDetail(idOrOrderNumber) {
+  if (!idOrOrderNumber) return null;
+  const raw = String(idOrOrderNumber);
+  const isNumeric = /^\d+$/.test(raw);
+
+  const params = {
+    select: '*,order_items(*)',
+    limit: 1,
+  };
+  params[isNumeric ? 'id' : 'order_number'] = `eq.${raw}`;
+
+  const res = await supabase.get('/orders', { params });
+  const row = Array.isArray(res.data) ? res.data[0] : null;
+  return row ? normalizeOrder(row) : null;
+}
+
 /** Status yang dianggap "uang sudah masuk" (dipakai hitung total belanja & poin). */
 const PAID_STATES = new Set([
   'paid',

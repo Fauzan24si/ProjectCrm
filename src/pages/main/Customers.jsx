@@ -9,7 +9,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { getUsers } from '../../services/users';
+import { getCustomersWithSpending } from '../../services/users';
 import { getMembershipMeta, formatRupiah } from '../../lib/membership';
 
 function MembershipBadge({ membership }) {
@@ -33,7 +33,7 @@ function Customers() {
 
   useEffect(() => {
     let active = true;
-    getUsers({ limit: 100, role: 'user' })
+    getCustomersWithSpending({ limit: 100 })
       .then((data) => {
         if (!active) return;
         setCustomers(data);

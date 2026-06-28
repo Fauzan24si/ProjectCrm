@@ -49,12 +49,83 @@ export async function getUsers({ limit = 100, offset = 0, role } = {}) {
   return (res.data || []).map(withMembership);
 }
 
+/**
+ * Ambil total belanja & jumlah order per user dari view `admin_customer_spending`
+ * (dihitung dari order paid-like, bukan kolom users.total_spent).
+ *
+ * @returns {Promise<Map<number, {orderCount:number, totalSpent:number}>>}
+ */
+export async function getCustomerSpendingMap() {
+  try {
+    const res = await supabase.get('/admin_customer_spending', {
+      params: { select: '*' },
+    });
+    const map = new Map();
+    for (const row of res.data || []) {
+      map.set(Number(row.user_id), {
+        orderCount: Number(row.order_count) || 0,
+        totalSpent: Number(row.total_spent) || 0,
+      });
+    }
+    return map;
+  } catch {
+    // View belum dimigrasi -> kembalikan map kosong (fallback ke total_spent lama).
+    return new Map();
+  }
+}
+
+/**
+ * Ambil daftar customer (role 'user') beserta total transaksi nyata dari order.
+ * Membership ikut dihitung ulang dari total transaksi yang sebenarnya.
+ *
+ * @returns {Promise<Array>}
+ */
+export async function getCustomersWithSpending({ limit = 100, offset = 0 } = {}) {
+  const [users, spendingMap] = await Promise.all([
+    getUsers({ limit, offset, role: 'user' }),
+    getCustomerSpendingMap(),
+  ]);
+
+  return users.map((u) => {
+    const spend = spendingMap.get(Number(u.id));
+    const totalSpent = spend ? spend.totalSpent : Number(u.total_spent) || 0;
+    return {
+      ...u,
+      total_spent: totalSpent,
+      order_count: spend ? spend.orderCount : 0,
+      membership: getMembership(totalSpent),
+    };
+  });
+}
+
 /** Ambil satu user berdasarkan id. */
 export async function getUser(id) {
   const res = await supabase.get(TABLE, {
     params: { id: `eq.${id}`, select: PUBLIC_FIELDS, limit: 1 },
   });
   return withMembership(res.data && res.data[0]);
+}
+
+/**
+ * Ambil satu customer beserta total transaksi nyata (dari order paid-like).
+ * Membership dihitung ulang dari total transaksi sebenarnya.
+ *
+ * @param {number|string} id
+ * @returns {Promise<object|null>}
+ */
+export async function getCustomerWithSpending(id) {
+  const user = await getUser(id);
+  if (!user) return null;
+
+  const spendingMap = await getCustomerSpendingMap();
+  const spend = spendingMap.get(Number(id));
+  const totalSpent = spend ? spend.totalSpent : Number(user.total_spent) || 0;
+  return {
+    ...user,
+    total_spent: totalSpent,
+    order_count: spend ? spend.orderCount : 0,
+    membership: getMembership(totalSpent),
+  };
 }
 
 /** Update sebagian data user. Membership akan dihitung ulang dari total_spent. */

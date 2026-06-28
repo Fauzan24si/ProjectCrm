@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiMail, FiPhone, FiUser, FiCreditCard, FiCalendar, FiShield } from 'react-icons/fi';
 import Card from '../../Reusable/Card';
 import Loading from '../../Reusable/Loading';
-import { getUser } from '../../services/users';
+import { getCustomerWithSpending } from '../../services/users';
 import { getMembershipMeta, formatRupiah } from '../../lib/membership';
 
 function CustomerDetail() {
@@ -14,7 +14,7 @@ function CustomerDetail() {
 
   useEffect(() => {
     setLoading(true);
-    getUser(id)
+    getCustomerWithSpending(id)
       .then((data) => {
         if (!data) {
           setError('Customer tidak ditemukan');

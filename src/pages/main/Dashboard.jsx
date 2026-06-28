@@ -1,6 +1,32 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FiMoreVertical, FiTrendingUp, FiShoppingBag, FiUsers, FiDollarSign } from 'react-icons/fi';
 import Card from '../../Reusable/Card';
 import Table from '../../Reusable/Table';
+import {
+  getDashboardStats,
+  getTopProducts,
+  getRecentOrders,
+  getOrderStatusMeta,
+} from '../../services/orders';
+import { formatRupiah } from '../../lib/membership';
+
+const formatShortDate = (iso) =>
+  iso
+    ? new Date(iso).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '-';
+
+// Petakan status order (lowercase DB) ke kelas badge existing di dashboard.
+const statusBadgeClass = (status) => {
+  const s = (status || '').toLowerCase();
+  if (s === 'completed' || s === 'paid' || s === 'delivered') return 'completed';
+  if (s === 'cancelled' || s === 'failed') return 'cancelled';
+  return 'processing';
+};
 
 const dashboardStyles = `
   /* Stats Cards Grid */
@@ -265,6 +291,37 @@ const dashboardStyles = `
 `;
 
 const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      getDashboardStats(),
+      getRecentOrders(5),
+      getTopProducts(4),
+    ])
+      .then(([s, orders, products]) => {
+        if (!active) return;
+        setStats(s);
+        setRecentOrders(orders);
+        setTopProducts(products);
+      })
+      .catch(() => {
+        // Biarkan nilai default (—) bila gagal.
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const dash = (v) => (loading || stats == null ? '—' : v);
+
   return (
     <>
       <style>{dashboardStyles}</style>
@@ -279,10 +336,10 @@ const Dashboard = () => {
             <p className="stat-label">Total Revenue</p>
             <div className="stat-icon revenue"><FiDollarSign /></div>
           </div>
-          <p className="stat-value">Rp 24.560.000</p>
+          <p className="stat-value">{dash(formatRupiah(stats?.total_revenue))}</p>
           <div className="stat-bar"><div className="stat-bar-fill" style={{ width: '72%' }}></div></div>
           <div className="stat-change positive">
-            <span>+12.5%</span><span className="muted">vs last month</span>
+            <span>Total</span><span className="muted">pendapatan lunas</span>
           </div>
         </Card>
 
@@ -291,10 +348,10 @@ const Dashboard = () => {
             <p className="stat-label">Total Orders</p>
             <div className="stat-icon orders"><FiShoppingBag /></div>
           </div>
-          <p className="stat-value">1,245</p>
+          <p className="stat-value">{dash(stats?.total_orders)}</p>
           <div className="stat-bar"><div className="stat-bar-fill" style={{ width: '58%' }}></div></div>
           <div className="stat-change positive">
-            <span>+8.2%</span><span className="muted">vs last month</span>
+            <span>Semua</span><span className="muted">status order</span>
           </div>
         </Card>
 
@@ -303,10 +360,10 @@ const Dashboard = () => {
             <p className="stat-label">Total Customers</p>
             <div className="stat-icon customers"><FiUsers /></div>
           </div>
-          <p className="stat-value">842</p>
+          <p className="stat-value">{dash(stats?.total_customers)}</p>
           <div className="stat-bar"><div className="stat-bar-fill" style={{ width: '45%' }}></div></div>
-          <div className="stat-change negative">
-            <span>-2.4%</span><span className="muted">vs last month</span>
+          <div className="stat-change positive">
+            <span>Member</span><span className="muted">terdaftar</span>
           </div>
         </Card>
 
@@ -315,10 +372,10 @@ const Dashboard = () => {
             <p className="stat-label">Conversion Rate</p>
             <div className="stat-icon conversion"><FiTrendingUp /></div>
           </div>
-          <p className="stat-value">4.5%</p>
+          <p className="stat-value">{dash(`${stats?.conversion_rate}%`)}</p>
           <div className="stat-bar"><div className="stat-bar-fill" style={{ width: '35%' }}></div></div>
           <div className="stat-change positive">
-            <span>+1.2%</span><span className="muted">vs last month</span>
+            <span>Lunas</span><span className="muted">dari total order</span>
           </div>
         </Card>
       </div>
@@ -329,7 +386,7 @@ const Dashboard = () => {
         <Card className="card">
           <div className="card-header">
             <h2 className="card-title">Recent Orders</h2>
-            <button className="view-all-btn">View All</button>
+            <Link to="/orders" className="view-all-btn">View All</Link>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <Table className="orders-table">
@@ -343,41 +400,37 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="order-id">#ORD-001</td>
-                  <td className="customer-name">John Doe</td>
-                  <td className="order-date">Oct 24, 2023</td>
-                  <td className="order-amount">Rp 1.800.000</td>
-                  <td><span className="status-badge completed">Completed</span></td>
-                </tr>
-                <tr>
-                  <td className="order-id">#ORD-002</td>
-                  <td className="customer-name">Jane Smith</td>
-                  <td className="order-date">Oct 23, 2023</td>
-                  <td className="order-amount">Rp 6.750.000</td>
-                  <td><span className="status-badge processing">Processing</span></td>
-                </tr>
-                <tr>
-                  <td className="order-id">#ORD-003</td>
-                  <td className="customer-name">Michael Johnson</td>
-                  <td className="order-date">Oct 23, 2023</td>
-                  <td className="order-amount">Rp 1.342.500</td>
-                  <td><span className="status-badge completed">Completed</span></td>
-                </tr>
-                <tr>
-                  <td className="order-id">#ORD-004</td>
-                  <td className="customer-name">Emily Davis</td>
-                  <td className="order-date">Oct 22, 2023</td>
-                  <td className="order-amount">Rp 3.150.000</td>
-                  <td><span className="status-badge cancelled">Cancelled</span></td>
-                </tr>
-                <tr>
-                  <td className="order-id">#ORD-005</td>
-                  <td className="customer-name">William Brown</td>
-                  <td className="order-date">Oct 21, 2023</td>
-                  <td className="order-amount">Rp 825.000</td>
-                  <td><span className="status-badge completed">Completed</span></td>
-                </tr>
+                {loading && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '20px 0', color: '#89868D' }}>
+                      Memuat data...
+                    </td>
+                  </tr>
+                )}
+                {!loading && recentOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '20px 0', color: '#89868D' }}>
+                      Belum ada order.
+                    </td>
+                  </tr>
+                )}
+                {!loading &&
+                  recentOrders.map((order) => {
+                    const meta = getOrderStatusMeta(order.status);
+                    return (
+                      <tr key={order.orderNumber}>
+                        <td className="order-id">{order.orderNumber}</td>
+                        <td className="customer-name">{order.customer || 'Guest'}</td>
+                        <td className="order-date">{formatShortDate(order.date)}</td>
+                        <td className="order-amount">{formatRupiah(order.total)}</td>
+                        <td>
+                          <span className={`status-badge ${statusBadgeClass(order.status)}`}>
+                            {meta.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </Table>
           </div>
@@ -390,53 +443,27 @@ const Dashboard = () => {
             <button className="more-btn"><FiMoreVertical /></button>
           </div>
           <div>
-            <div className="product-row">
-              <img src="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=150&q=80" alt="Syltherine" className="product-img" />
-              <div className="product-info">
-                <p className="product-name">Syltherine</p>
-                <p className="product-category">Stylish cafe chair</p>
-              </div>
-              <div className="product-price">
-                <p>Rp 2.500.000</p>
-                <p>124 sales</p>
-              </div>
-            </div>
-
-            <div className="product-row">
-              <img src="https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=150&q=80" alt="Leviosa" className="product-img" />
-              <div className="product-info">
-                <p className="product-name">Leviosa</p>
-                <p className="product-category">Stylish cafe chair</p>
-              </div>
-              <div className="product-price">
-                <p>Rp 2.500.000</p>
-                <p>98 sales</p>
-              </div>
-            </div>
-
-            <div className="product-row">
-              <img src="https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=150&q=80" alt="Lolito" className="product-img" />
-              <div className="product-info">
-                <p className="product-name">Lolito</p>
-                <p className="product-category">Luxury big sofa</p>
-              </div>
-              <div className="product-price">
-                <p>Rp 7.000.000</p>
-                <p>74 sales</p>
-              </div>
-            </div>
-
-            <div className="product-row">
-              <img src="https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?w=150&q=80" alt="Respira" className="product-img" />
-              <div className="product-info">
-                <p className="product-name">Respira</p>
-                <p className="product-category">Outdoor bar table and stool</p>
-              </div>
-              <div className="product-price">
-                <p>Rp 5.000.000</p>
-                <p>52 sales</p>
-              </div>
-            </div>
+            {loading && (
+              <p style={{ color: '#89868D', fontSize: 14, margin: 0 }}>Memuat data...</p>
+            )}
+            {!loading && topProducts.length === 0 && (
+              <p style={{ color: '#89868D', fontSize: 14, margin: 0 }}>
+                Belum ada penjualan.
+              </p>
+            )}
+            {!loading &&
+              topProducts.map((p) => (
+                <div className="product-row" key={p.productId ?? p.title}>
+                  <div className="product-info">
+                    <p className="product-name">{p.title}</p>
+                    <p className="product-category">{p.totalQty} terjual</p>
+                  </div>
+                  <div className="product-price">
+                    <p>{formatRupiah(p.totalRevenue)}</p>
+                    <p>{p.totalQty} sales</p>
+                  </div>
+                </div>
+              ))}
           </div>
         </Card>
       </div>

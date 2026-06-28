@@ -1,18 +1,55 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiPrinter, FiUser, FiCalendar, FiCreditCard, FiPackage, FiTag } from 'react-icons/fi';
-import salesData from '../../data/sales.json';
 import Table from '../../Reusable/Table';
+import { getOrderDetail, getOrderStatusMeta } from '../../services/orders';
 
-const formatRupiah = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
+const formatRupiah = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 
 const formatDate = (iso) => {
+  if (!iso) return '-';
   const d = new Date(iso);
   return d.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 };
 
+// Status DB (lowercase) -> kelas badge/timeline existing.
+const odStatusClass = (status) => {
+  const s = (status || '').toLowerCase();
+  if (['cancelled', 'failed'].includes(s)) return 'cancelled';
+  if (s === 'pending') return 'processing';
+  return 'completed';
+};
+
 function OrderDetail() {
   const { id } = useParams();
-  const order = salesData.find((s) => s.id === id);
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getOrderDetail(id)
+      .then((data) => {
+        if (active) setOrder(data || null);
+      })
+      .catch(() => {
+        if (active) setOrder(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        Memuat detail order...
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -28,8 +65,15 @@ function OrderDetail() {
     );
   }
 
-  // Breakdown biaya (dummy): subtotal = total, tax 11%, shipping flat 150k, grand total = total + tax + ship
-  const subtotal = order.total;
+  const statusClass = odStatusClass(order.status);
+  const statusMeta = getOrderStatusMeta(order.status);
+  const items = order.items || [];
+
+  // Breakdown biaya: subtotal item, PPN 11%, ongkir flat 150k.
+  const subtotal = items.reduce(
+    (sum, i) => sum + Number(i.price) * Number(i.qty),
+    0
+  );
   const tax = Math.round(subtotal * 0.11);
   const shipping = 150000;
   const grandTotal = subtotal + tax + shipping;
@@ -51,15 +95,15 @@ function OrderDetail() {
       <div className="od-header">
         <div>
           <p className="od-label">Invoice</p>
-          <h1 className="od-invoice">{order.id}</h1>
+          <h1 className="od-invoice">{order.orderNumber}</h1>
           <p className="od-date">
             <FiCalendar style={{ marginRight: 6, verticalAlign: 'middle' }} />
             {formatDate(order.date)}
           </p>
         </div>
         <div className="od-status-wrap">
-          <span className={`od-status ${order.status.toLowerCase()}`}>
-            {order.status}
+          <span className={`od-status ${statusClass}`}>
+            {statusMeta.label}
           </span>
         </div>
       </div>
@@ -70,8 +114,16 @@ function OrderDetail() {
           {/* Customer & Payment */}
           <div className="od-card">
             <div className="od-two-col">
-              <InfoBlock icon={<FiUser />} title="Customer" lines={[order.customer, 'customer@example.com']} />
-              <InfoBlock icon={<FiCreditCard />} title="Pembayaran" lines={[order.payment, 'Paid in full']} />
+              <InfoBlock
+                icon={<FiUser />}
+                title="Customer"
+                lines={[order.customer || 'Guest', order.email || '-']}
+              />
+              <InfoBlock
+                icon={<FiCreditCard />}
+                title="Pembayaran"
+                lines={[order.payment || '-', statusMeta.label]}
+              />
             </div>
           </div>
 
@@ -82,33 +134,42 @@ function OrderDetail() {
               <thead>
                 <tr>
                   <th>Produk</th>
-                  <th>Kategori</th>
+                  <th>Varian</th>
                   <th className="num">Qty</th>
                   <th className="num">Harga</th>
                   <th className="num">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>
-                    <div className="od-item-cell">
-                      <div className="od-item-thumb"><FiPackage /></div>
-                      <div>
-                        <p className="od-item-name">{order.product}</p>
-                        <p className="od-item-sku">SKU: {order.id.replace('INV', 'SKU')}</p>
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="od-item-cell">
+                        <div className="od-item-thumb"><FiPackage /></div>
+                        <div>
+                          <p className="od-item-name">{item.title}</p>
+                          <p className="od-item-sku">ID: {item.productId ?? '-'}</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="od-category">
-                      <FiTag size={11} style={{ marginRight: 4 }} />
-                      {order.category}
-                    </span>
-                  </td>
-                  <td className="num">{order.qty}</td>
-                  <td className="num">{formatRupiah(order.price)}</td>
-                  <td className="num bold">{formatRupiah(order.total)}</td>
-                </tr>
+                    </td>
+                    <td>
+                      <span className="od-category">
+                        <FiTag size={11} style={{ marginRight: 4 }} />
+                        {item.variant || '-'}
+                      </span>
+                    </td>
+                    <td className="num">{item.qty}</td>
+                    <td className="num">{formatRupiah(item.price)}</td>
+                    <td className="num bold">{formatRupiah(item.price * item.qty)}</td>
+                  </tr>
+                ))}
+                {items.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: 20, color: '#9ca3af', textAlign: 'center' }}>
+                      Tidak ada item.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </Table>
           </div>
@@ -147,25 +208,21 @@ function OrderDetail() {
                   <p className="od-tl-sub">{formatDate(order.date)}</p>
                 </div>
               </li>
-              <li className={order.status !== 'Cancelled' ? 'done' : ''}>
+              <li className={statusClass !== 'cancelled' ? 'done' : ''}>
                 <span className="od-dot" />
                 <div>
                   <p className="od-tl-title">Pembayaran diterima</p>
-                  <p className="od-tl-sub">{order.payment}</p>
+                  <p className="od-tl-sub">{order.payment || '-'}</p>
                 </div>
               </li>
-              <li className={order.status === 'Completed' ? 'done' : order.status === 'Processing' ? 'current' : ''}>
+              <li className={statusClass === 'completed' ? 'done' : statusClass === 'processing' ? 'current' : ''}>
                 <span className="od-dot" />
                 <div>
-                  <p className="od-tl-title">
-                    {order.status === 'Completed' && 'Selesai dikirim'}
-                    {order.status === 'Processing' && 'Sedang diproses'}
-                    {order.status === 'Cancelled' && 'Dibatalkan'}
-                  </p>
+                  <p className="od-tl-title">{statusMeta.label}</p>
                   <p className="od-tl-sub">
-                    {order.status === 'Completed' ? 'Pesanan telah sampai ke customer'
-                     : order.status === 'Processing' ? 'Menunggu pengiriman'
-                     : 'Order dibatalkan oleh sistem'}
+                    {statusClass === 'completed' ? 'Pesanan diproses / selesai'
+                     : statusClass === 'processing' ? 'Menunggu pembayaran'
+                     : 'Order dibatalkan'}
                   </p>
                 </div>
               </li>

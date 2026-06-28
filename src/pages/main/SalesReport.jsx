@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiDollarSign, FiShoppingBag, FiXCircle, FiClock, FiSearch, FiMoreVertical } from 'react-icons/fi';
-import salesData from '../../data/sales.json';
 import {
   Table,
   TableHeader,
@@ -11,6 +10,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getSalesReport, getOrderStatusMeta } from '../../services/orders';
 
 const formatRupiah = (n) =>
   'Rp ' + Number(n).toLocaleString('id-ID');
@@ -20,44 +20,72 @@ const formatDate = (iso) => {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+// Tab filter UI (label) -> status DB (lowercase). 'Completed' mencakup semua
+// status pasca-bayar agar transaksi lunas tetap muncul.
+const STATUS_TABS = ['all', 'Completed', 'Processing', 'Cancelled'];
+const PAID_LIKE = ['paid', 'processing', 'shipped', 'delivered', 'completed'];
+
+function matchTab(tab, status) {
+  const s = (status || '').toLowerCase();
+  if (tab === 'all') return true;
+  if (tab === 'Completed') return PAID_LIKE.includes(s);
+  if (tab === 'Processing') return s === 'pending';
+  if (tab === 'Cancelled') return s === 'cancelled' || s === 'failed';
+  return true;
+}
+
 function SalesReport() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
+    let active = true;
+    getSalesReport()
+      .then((data) => {
+        if (active) setOrders(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (active) setOrders([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const stats = useMemo(() => {
-    const completed = salesData.filter((s) => s.status === 'Completed');
-    const processing = salesData.filter((s) => s.status === 'Processing');
-    const cancelled = salesData.filter((s) => s.status === 'Cancelled');
-    const revenue = completed.reduce((sum, s) => sum + s.total, 0);
+    const paid = orders.filter((o) => PAID_LIKE.includes((o.status || '').toLowerCase()));
+    const processing = orders.filter((o) => (o.status || '').toLowerCase() === 'pending');
+    const cancelled = orders.filter((o) =>
+      ['cancelled', 'failed'].includes((o.status || '').toLowerCase())
+    );
+    const revenue = paid.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     return {
-      total: salesData.length,
-      completed: completed.length,
+      total: orders.length,
+      completed: paid.length,
       processing: processing.length,
       cancelled: cancelled.length,
       revenue,
     };
-  }, []);
+  }, [orders]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return salesData.filter((s) => {
+    return orders.filter((o) => {
       const matchSearch =
         !q ||
-        s.id.toLowerCase().includes(q) ||
-        s.customer.toLowerCase().includes(q) ||
-        s.product.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q);
-      const matchStatus = statusFilter === 'all' || s.status === statusFilter;
-      return matchSearch && matchStatus;
+        (o.orderNumber || '').toLowerCase().includes(q) ||
+        (o.customer || '').toLowerCase().includes(q) ||
+        (o.product || '').toLowerCase().includes(q) ||
+        (o.category || '').toLowerCase().includes(q);
+      return matchSearch && matchTab(statusFilter, o.status);
     });
-  }, [search, statusFilter]);
+  }, [orders, search, statusFilter]);
 
   return (
     <>
@@ -109,7 +137,7 @@ function SalesReport() {
         {/* Toolbar Section */}
         <div className="table-search-row custom-toolbar">
           <div className="sr-tabs">
-            {['all', 'Completed', 'Processing', 'Cancelled'].map((s) => (
+            {STATUS_TABS.map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
@@ -167,29 +195,42 @@ function SalesReport() {
                 ))}
 
               {!loading &&
-                filtered.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>
-                    <div className="customer-cell">
-                      <img src={`https://ui-avatars.com/api/?name=${row.customer}&background=random&color=fff`} alt={row.customer} className="cust-avatar" />
-                      <div className="cust-info">
-                        <span className="cust-name">{row.customer}</span>
-                        <span className="cust-email">{row.customer.split(' ')[0].toLowerCase()}@gmail.com</span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-gray">{row.product}</TableCell>
-                  <TableCell className="text-gray">{row.id}</TableCell>
-                  <TableCell className="text-gray">{formatRupiah(row.total)}</TableCell>
-                  <TableCell>
-                    <div className="status-cell">
-                      <span className={`status-dot ${row.status.toLowerCase()}`}></span>
-                      <span className="status-text">{row.status}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-gray">{formatDate(row.date)}</TableCell>
-                </TableRow>
-              ))}
+                filtered.map((row) => {
+                  const meta = getOrderStatusMeta(row.status);
+                  const dotClass =
+                    ['cancelled', 'failed'].includes((row.status || '').toLowerCase())
+                      ? 'cancelled'
+                      : (row.status || '').toLowerCase() === 'pending'
+                        ? 'processing'
+                        : 'completed';
+                  return (
+                    <TableRow
+                      key={row.orderNumber}
+                      onClick={() => navigate(`/orders/${row.orderNumber}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <TableCell>
+                        <div className="customer-cell">
+                          <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(row.customer || 'Guest')}&background=random&color=fff`} alt={row.customer} className="cust-avatar" />
+                          <div className="cust-info">
+                            <span className="cust-name">{row.customer || 'Guest'}</span>
+                            <span className="cust-email">{row.email || '-'}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray">{row.product}</TableCell>
+                      <TableCell className="text-gray">{row.orderNumber}</TableCell>
+                      <TableCell className="text-gray">{formatRupiah(row.total)}</TableCell>
+                      <TableCell>
+                        <div className="status-cell">
+                          <span className={`status-dot ${dotClass}`}></span>
+                          <span className="status-text">{meta.label}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray">{formatDate(row.date)}</TableCell>
+                    </TableRow>
+                  );
+                })}
               {filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="empty-state">
