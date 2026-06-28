@@ -41,8 +41,13 @@ export default async function handler(req, res) {
     const payload =
       typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
 
-    if (defaultModel && !payload.model) {
+    // Model: bila AI_MODEL di-set di server, selalu pakai itu (otoritatif),
+    // agar tidak bergantung pada VITE_AI_MODEL yang di-inline saat build.
+    // Jika tidak, pakai model dari client; fallback terakhir ke defaultModel.
+    if (defaultModel) {
       payload.model = defaultModel;
+    } else if (!payload.model) {
+      payload.model = 'openai.gpt-oss-120b';
     }
 
     const upstream = await fetch(`${target.replace(/\/$/, '')}/v1/chat/completions`, {

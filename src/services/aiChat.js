@@ -19,11 +19,16 @@ const BASE_URL = import.meta.env.VITE_AI_BASE_URL;
 const API_KEY = import.meta.env.VITE_AI_API_KEY;
 const MODEL = import.meta.env.VITE_AI_MODEL || 'openai.gpt-oss-120b';
 
-// Saat production (build di Vercel) pakai serverless function sebagai proxy.
-const IS_PROD = import.meta.env.PROD;
-
 /**
  * Kirim daftar pesan ke model dan dapatkan balasan.
+ *
+ * Strategi endpoint (robust untuk semua cara menjalankan app):
+ *  1. Coba serverless `/api/ai` lebih dulu — ini jalan di Vercel (deploy)
+ *     maupun `vercel dev`. Key ditambahkan di server.
+ *  2. Bila `/api/ai` tidak tersedia (mis. `npm run dev` murni, yang
+ *     mengembalikan HTML / 404), fallback ke proxy Vite `/ai-api/v1`
+ *     dengan key dari .env.
+ *
  * @param {Array<{role: 'system'|'user'|'assistant', content: string}>} messages
  * @param {object} [options]
  * @param {number} [options.maxTokens=512]
@@ -38,49 +43,73 @@ export async function sendChat(messages, { maxTokens = 512, signal } = {}) {
     stream: false,
   };
 
-  let url;
-  const headers = { 'Content-Type': 'application/json' };
+  // 1. Serverless function (Vercel deploy & `vercel dev`).
+  const viaServerless = await tryRequest('/api/ai', body, { signal });
+  if (viaServerless.ok) return parseChatResponse(viaServerless.raw);
 
-  if (IS_PROD) {
-    // Production: lewat serverless function. Key ditambahkan di server.
-    url = '/api/ai';
-  } else {
-    // Development: lewat proxy Vite, key dikirim dari client.
-    if (!BASE_URL || !API_KEY) {
-      throw new Error(
-        'Konfigurasi AI belum lengkap. Set VITE_AI_BASE_URL dan VITE_AI_API_KEY di .env'
-      );
-    }
-    url = `${BASE_URL}/chat/completions`;
-    headers.Authorization = `Bearer ${API_KEY}`;
+  // 2. Fallback: proxy Vite (hanya aktif pada `npm run dev`).
+  if (viaServerless.unavailable && BASE_URL && API_KEY) {
+    const viaProxy = await tryRequest(
+      `${BASE_URL}/chat/completions`,
+      body,
+      { signal, headers: { Authorization: `Bearer ${API_KEY}` } }
+    );
+    if (viaProxy.ok) return parseChatResponse(viaProxy.raw);
+    if (viaProxy.error) throw new Error(viaProxy.error);
   }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-    signal,
-  });
+  // Tidak ada endpoint yang tersedia.
+  if (viaServerless.error) throw new Error(viaServerless.error);
+  throw new Error(
+    'Layanan AI tidak tersedia. Jalankan via Vercel/`vercel dev`, atau set ' +
+      'VITE_AI_BASE_URL & VITE_AI_API_KEY untuk mode `npm run dev`.'
+  );
+}
+
+/**
+ * Lakukan satu request ke sebuah endpoint AI.
+ * @returns {Promise<{ok:boolean, raw?:string, error?:string, unavailable?:boolean}>}
+ *   - ok=true       : sukses, `raw` berisi body
+ *   - unavailable   : endpoint tidak ada (HTML/404) -> boleh fallback
+ *   - error         : pesan error pasti (jangan fallback)
+ */
+async function tryRequest(url, body, { signal, headers = {} } = {}) {
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    // Gagal jaringan -> anggap endpoint ini tidak tersedia (boleh fallback).
+    return { unavailable: true };
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  const raw = await response.text();
+
+  // Endpoint tidak ada: SPA fallback mengembalikan HTML, atau 404.
+  const looksHtml =
+    contentType.includes('text/html') || /^\s*<(!doctype|html)/i.test(raw);
+  if (looksHtml || response.status === 404) {
+    return { unavailable: true };
+  }
 
   if (!response.ok) {
-    // Baca body SEKALI sebagai teks, lalu coba parse jadi JSON.
-    // Membaca body dua kali (response.json() lalu response.text())
-    // memicu error "body stream already read".
-    const rawErr = await response.text();
-    let detail = rawErr;
+    let detail = raw;
     try {
-      const errBody = JSON.parse(rawErr);
+      const errBody = JSON.parse(raw);
       detail = errBody.error?.message || JSON.stringify(errBody);
     } catch {
-      // Bukan JSON; pakai teks mentah apa adanya.
+      // Bukan JSON; pakai teks mentah.
     }
-    throw new Error(`AI request gagal (${response.status}): ${detail}`);
+    return { error: `AI request gagal (${response.status}): ${detail}` };
   }
 
-  // Baca sebagai teks dulu agar bisa menangani JSON biasa maupun
-  // format streaming SSE ("data: {...}") yang dikirim sebagian server.
-  const raw = await response.text();
-  return parseChatResponse(raw);
+  return { ok: true, raw };
 }
 
 /**
@@ -101,7 +130,10 @@ function parseChatResponse(raw) {
       const data = JSON.parse(text);
       return data.choices?.[0]?.message?.content ?? '';
     } catch {
-      // Bukan JSON valid; kembalikan apa adanya.
+      // Bukan JSON valid. Jika tampak seperti HTML, jangan kembalikan mentah.
+      if (/^\s*<(!doctype|html|\?xml)/i.test(text)) {
+        throw new Error('Respons AI tidak valid (menerima HTML, bukan data).');
+      }
       return text;
     }
   }

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FiMessageCircle, FiX, FiSend } from 'react-icons/fi';
 import { sendChat } from '../services/aiChat';
-import { getProducts } from '../services/products';
+import { getProducts, getBestSellers } from '../services/products';
 import { formatRupiah } from '../lib/membership';
 
 const BASE_SYSTEM_PROMPT =
@@ -13,6 +13,9 @@ const BASE_SYSTEM_PROMPT =
   'Hanya rekomendasikan produk yang ada di dalam daftar katalog yang diberikan. ' +
   'Jika pengguna bertanya tentang produk yang tidak ada di katalog, katakan dengan jujur bahwa produk tersebut tidak tersedia. ' +
   'Saat merekomendasikan, sebutkan nama produk, harga, dan alasan singkat. ' +
+  'Jika pengguna bertanya produk terlaris / paling laku / best seller, gunakan data "PRODUK TERLARIS" ' +
+  'yang diberikan (berdasarkan jumlah unit terjual nyata). Bila daftar terlaris kosong, ' +
+  'barulah katakan belum ada data penjualan. ' +
   'Jika pengguna menanyakan kontak, customer service, nomor telepon, atau WhatsApp, ' +
   'berikan nomor WhatsApp resmi toko: +62 812-6790-5243 ' +
   'beserta tautan langsungnya: https://wa.me/6281267905243';
@@ -34,6 +37,18 @@ function buildCatalogContext(products) {
     return parts.join(' | ');
   });
   return `Berikut daftar produk yang tersedia di toko:\n${lines.join('\n')}`;
+}
+
+/** Bangun ringkasan produk terlaris (berdasarkan unit terjual) untuk konteks AI. */
+function buildBestSellerContext(bestSellers) {
+  const sold = (bestSellers || []).filter((p) => Number(p.sold_count) > 0);
+  if (sold.length === 0) {
+    return 'PRODUK TERLARIS: belum ada data penjualan.';
+  }
+  const lines = sold.slice(0, 5).map((p, i) => {
+    return `${i + 1}. ${p.title} | terjual: ${p.sold_count} unit | harga: ${formatRupiah(p.price)}`;
+  });
+  return `PRODUK TERLARIS (urut dari paling laku):\n${lines.join('\n')}`;
 }
 
 /**
@@ -75,9 +90,10 @@ const ChatWidget = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [products, setProducts] = useState([]);
+  const [bestSellers, setBestSellers] = useState([]);
   const scrollRef = useRef(null);
 
-  // Muat katalog produk sekali saat widget pertama dibuka.
+  // Muat katalog produk & produk terlaris sekali saat widget pertama dibuka.
   useEffect(() => {
     if (!open || products.length > 0) return;
     let active = true;
@@ -87,6 +103,13 @@ const ChatWidget = () => {
       })
       .catch(() => {
         // Diamkan; AI tetap bisa menjawab tanpa katalog.
+      });
+    getBestSellers(5)
+      .then((data) => {
+        if (active) setBestSellers(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        // Diamkan; fitur terlaris opsional.
       });
     return () => {
       active = false;
@@ -116,7 +139,7 @@ const ChatWidget = () => {
       // Bangun system prompt + konteks katalog produk terkini.
       const systemPrompt = {
         role: 'system',
-        content: `${BASE_SYSTEM_PROMPT}\n\n${buildCatalogContext(products)}`,
+        content: `${BASE_SYSTEM_PROMPT}\n\n${buildCatalogContext(products)}\n\n${buildBestSellerContext(bestSellers)}`,
       };
       const reply = await sendChat([systemPrompt, ...nextMessages]);
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);

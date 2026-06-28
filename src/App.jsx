@@ -24,6 +24,7 @@ const MemberDashboard = React.lazy(() => import('./pages/main/MemberDashboard'))
 const Wishlist = React.lazy(() => import('./pages/main/Wishlist'));
 const Profile = React.lazy(() => import('./pages/main/Profile'));
 const Address = React.lazy(() => import('./pages/main/Address'));
+const MemberVouchers = React.lazy(() => import('./pages/main/MemberVouchers'));
 const Keranjang = React.lazy(() => import('./pages/main/Keranjang'));
 const TransactionHistory = React.lazy(() => import('./pages/main/TransactionHistory'));
 const MemberTrackOrder = React.lazy(() => import('./pages/main/MemberTrackOrder'));
@@ -75,6 +76,7 @@ function App() {
                     <Route path="/member/address" element={<Address />} />
                     <Route path="/member/cart" element={<Keranjang />} />
                     <Route path="/member/transactions" element={<TransactionHistory />} />
+                    <Route path="/member/vouchers" element={<MemberVouchers />} />
                     <Route path="/member/track" element={<MemberTrackOrder />} />
                   </Route>
                 </Route>

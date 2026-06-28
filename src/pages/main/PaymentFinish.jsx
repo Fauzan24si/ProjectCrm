@@ -354,6 +354,22 @@ function PaymentFinish({ mode = 'finish' }) {
                 )}
               </tbody>
               <tfoot>
+                {Number(order?.discount_amount) > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={3} className="ta-right">Subtotal</td>
+                      <td className="ta-right">{formatRupiah(subtotal)}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={3} className="ta-right" style={{ color: '#067647' }}>
+                        Diskon Voucher
+                      </td>
+                      <td className="ta-right" style={{ color: '#067647' }}>
+                        - {formatRupiah(order.discount_amount)}
+                      </td>
+                    </tr>
+                  </>
+                )}
                 <tr>
                   <td colSpan={3} className="ta-right pf-total-label">
                     Total

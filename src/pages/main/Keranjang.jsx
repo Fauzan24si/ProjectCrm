@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FiShoppingCart,
@@ -7,11 +7,14 @@ import {
   FiMinus,
   FiArrowLeft,
   FiCheckCircle,
+  FiTag,
 } from 'react-icons/fi';
 import { useCart } from '../../context/CartContext';
 import { formatRupiah } from '../../lib/membership';
 import { getCurrentUser } from '../../services/auth';
 import { getUser } from '../../services/users';
+import { getUserVouchers } from '../../services/vouchers';
+import { calculateDiscount, isVoucherEligible } from '../../lib/vouchers';
 import { createTransaction } from '../../services/payment';
 
 function Keranjang() {
@@ -20,9 +23,33 @@ function Keranjang() {
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type, message }
+  const [vouchers, setVouchers] = useState([]); // user_vouchers + vouchers(*)
+  const [selectedUv, setSelectedUv] = useState(null); // user_voucher terpilih
 
   const session = getCurrentUser();
   const isGuest = !session;
+
+  // Ambil voucher milik user (hanya untuk member login).
+  useEffect(() => {
+    if (!session) return;
+    let active = true;
+    getUserVouchers(session.id)
+      .then((data) => {
+        if (active) setVouchers(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (active) setVouchers([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [session?.id]);
+
+  const selectedVoucher = selectedUv ? selectedUv.vouchers : null;
+  const discount = selectedVoucher
+    ? calculateDiscount(selectedVoucher, totalPrice)
+    : 0;
+  const grandTotal = Math.max(totalPrice - discount, 0);
 
   const handleCheckout = async () => {
     // Wajib login untuk melakukan order.
@@ -55,7 +82,9 @@ function Keranjang() {
       };
 
       // Konfirmasi pesanan: buat invoice (order pending) di server.
-      const { orderId } = await createTransaction({ items, customer });
+      // Diskon dihitung ulang di server berdasarkan userVoucherId.
+      const voucher = selectedUv ? { userVoucherId: selectedUv.id } : null;
+      const { orderId } = await createTransaction({ items, customer, voucher });
       sessionStorage.setItem('last_order_id', orderId);
       clearCart();
       setProcessing(false);
@@ -162,10 +191,56 @@ function Keranjang() {
                 <span>Subtotal</span>
                 <span>{formatRupiah(totalPrice)}</span>
               </div>
+
+              {/* Pilih voucher (hanya member login yang punya voucher) */}
+              {!isGuest && vouchers.length > 0 && (
+                <div className="cart-voucher">
+                  <span className="cart-voucher-label">
+                    <FiTag size={13} /> Voucher
+                  </span>
+                  <div className="cart-voucher-list">
+                    {vouchers.map((uv) => {
+                      const v = uv.vouchers;
+                      if (!v) return null;
+                      const eligible = isVoucherEligible(v, totalPrice);
+                      const active = selectedUv?.id === uv.id;
+                      return (
+                        <button
+                          key={uv.id}
+                          type="button"
+                          className={`voucher-chip ${active ? 'active' : ''}`}
+                          disabled={!eligible}
+                          title={
+                            eligible
+                              ? v.description || v.title
+                              : `Min. belanja ${formatRupiah(v.min_purchase)}`
+                          }
+                          onClick={() => setSelectedUv(active ? null : uv)}
+                        >
+                          <span className="voucher-chip-title">{v.title}</span>
+                          {!eligible && (
+                            <span className="voucher-chip-note">
+                              min {formatRupiah(v.min_purchase)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {discount > 0 && (
+                <div className="summary-row summary-discount">
+                  <span>Diskon</span>
+                  <span>- {formatRupiah(discount)}</span>
+                </div>
+              )}
+
               <div className="summary-divider" />
               <div className="summary-row summary-total">
                 <span>Total</span>
-                <span>{formatRupiah(totalPrice)}</span>
+                <span>{formatRupiah(grandTotal)}</span>
               </div>
 
               {isGuest && (
@@ -379,6 +454,42 @@ const cartStyles = `
     background: #f3f4f6;
     margin: 8px 0 16px;
   }
+  .summary-discount { color: #067647; font-weight: 600; }
+
+  .cart-voucher { margin: 8px 0 4px; }
+  .cart-voucher-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #667085;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+  .cart-voucher-list { display: flex; flex-direction: column; gap: 8px; }
+  .voucher-chip {
+    text-align: left;
+    background: #fff;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .voucher-chip:hover:not(:disabled) { border-color: #101828; }
+  .voucher-chip.active {
+    border-color: #101828;
+    box-shadow: 0 0 0 3px rgba(16,24,40,0.1);
+  }
+  .voucher-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+  .voucher-chip-title { font-size: 13px; font-weight: 600; color: #101828; }
+  .voucher-chip-note { font-size: 11px; color: #b42318; }
   .summary-total {
     font-size: 18px;
     font-weight: 700;

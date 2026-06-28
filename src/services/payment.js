@@ -36,7 +36,7 @@ export function loadSnap() {
  * @param {{items: Array, customer: object}} param0
  * @returns {Promise<{token: string, orderId: string, grossAmount: number}>}
  */
-export async function createTransaction({ items, customer }) {
+export async function createTransaction({ items, customer, voucher = null }) {
   const res = await fetch('/api/midtrans/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -49,6 +49,8 @@ export async function createTransaction({ items, customer }) {
         unitPrice: i.price,
       })),
       customer,
+      // voucher: { userVoucherId, voucherId } — diskon dihitung ulang di server.
+      voucher,
     }),
   });
 

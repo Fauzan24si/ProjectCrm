@@ -15,7 +15,7 @@ import {
 import { getCurrentUser } from '../../services/auth';
 import { getUser } from '../../services/users';
 import { getMembership, getMembershipMeta, formatRupiah } from '../../lib/membership';
-import { calculatePoints, formatPoints, getTierBenefits } from '../../lib/loyalty';
+import { formatPoints, getTierBenefits } from '../../lib/loyalty';
 import {
   getOrdersByUser,
   summarizeOrders,
@@ -89,7 +89,7 @@ function MemberDashboard() {
       ? Math.min((totalSpent / tierInfo.target) * 100, 100)
       : 100;
 
-  const points = calculatePoints(totalSpent);
+  const points = Number(user.points) || 0;
   const benefits = getTierBenefits(currentTier);
 
   return (
@@ -157,7 +157,7 @@ function MemberDashboard() {
             <div>
               <span className="stat-label">Poin Reward</span>
               <p className="stat-value">{formatPoints(points)} pts</p>
-              <span className="stat-hint">100 poin / Rp 10.000 belanja</span>
+              <span className="stat-hint">Tukar di menu Voucher</span>
             </div>
           </div>
           <div className="stat-card">

@@ -16,6 +16,7 @@
 import supabase from '../lib/supabase';
 import { updateUser, getUser } from './users';
 import { calculatePoints } from '../lib/loyalty';
+import { markVoucherUsed, awardPoints } from './vouchers';
 
 /**
  * Normalisasi satu baris order Supabase (beserta order_items) menjadi bentuk
@@ -395,6 +396,25 @@ export async function completeCheckout({
   if (status === 'paid' && customer.id) {
     const result = await awardMemberPoints(customer.id, grossAmount);
     pointsEarned = result?.pointsEarned || 0;
+
+    // Hook point earning sederhana: 100 poin per Rp 10.000 (selaras lib/loyalty).
+    const earned = calculatePoints(grossAmount);
+    if (earned > 0) {
+      try {
+        await awardPoints(customer.id, earned, `Poin dari order ${orderNumber}`);
+      } catch {
+        // Non-fatal.
+      }
+    }
+  }
+
+  // Tandai voucher terpakai bila order memakai voucher & sudah lunas.
+  if (status === 'paid' && order?.user_voucher_id) {
+    try {
+      await markVoucherUsed(order.user_voucher_id, order.id);
+    } catch {
+      // Non-fatal.
+    }
   }
 
   // Kirim email invoice (fallback selain webhook Midtrans). Non-fatal & idempoten.

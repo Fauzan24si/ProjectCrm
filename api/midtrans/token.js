@@ -48,6 +48,55 @@ function resolveVariant(variants, selection) {
   return { delta, label: parts.join(', ') };
 }
 
+/**
+ * Validasi voucher milik user & hitung ulang potongan di server (sumber kebenaran).
+ * Menerima { userVoucherId } dari client, lalu ambil user_voucher + voucher dari DB.
+ *
+ * @param {object|null} voucherInput - { userVoucherId }
+ * @param {number} grossAmount - subtotal sebelum diskon
+ * @param {number|null} userId - id user pemesan
+ * @returns {Promise<{discount:number, userVoucherId:number|null}>}
+ */
+async function resolveVoucher(voucherInput, grossAmount, userId) {
+  if (!voucherInput || !voucherInput.userVoucherId || !userId) {
+    return { discount: 0, userVoucherId: null };
+  }
+  const base = (process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+
+  const url =
+    `${base}/rest/v1/user_vouchers?id=eq.${encodeURIComponent(voucherInput.userVoucherId)}` +
+    `&select=*,vouchers(*)&limit=1`;
+  const res = await fetch(url, { headers });
+  if (!res.ok) return { discount: 0, userVoucherId: null };
+  const rows = await res.json();
+  const uv = Array.isArray(rows) ? rows[0] : null;
+
+  // Validasi kepemilikan & status.
+  if (!uv || uv.status !== 'active' || String(uv.user_id) !== String(userId)) {
+    return { discount: 0, userVoucherId: null };
+  }
+  const v = uv.vouchers;
+  if (!v) return { discount: 0, userVoucherId: null };
+
+  const min = Number(v.min_purchase) || 0;
+  if (grossAmount < min) return { discount: 0, userVoucherId: null };
+
+  let discount = 0;
+  if (v.discount_type === 'percentage') {
+    discount = (grossAmount * (Number(v.discount_value) || 0)) / 100;
+    const max = v.max_discount != null ? Number(v.max_discount) : null;
+    if (max != null && discount > max) discount = max;
+  } else {
+    discount = Number(v.discount_value) || 0;
+  }
+  if (discount > grossAmount) discount = grossAmount;
+  if (discount < 0) discount = 0;
+
+  return { discount: Math.round(discount), userVoucherId: uv.id };
+}
+
 /** Ambil harga produk asli dari Supabase berdasarkan daftar id. */
 async function fetchProducts(ids) {
   const base = (process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
@@ -65,7 +114,7 @@ async function fetchProducts(ids) {
 }
 
 /** Simpan order (header + items) ke Supabase dengan status 'pending'. */
-async function saveOrder({ orderId, grossAmount, customer, itemDetails }) {
+async function saveOrder({ orderId, grossAmount, discountAmount = 0, userVoucherId = null, customer, itemDetails }) {
   const base = (process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
   const key = process.env.VITE_SUPABASE_ANON_KEY;
   const headers = {
@@ -85,6 +134,8 @@ async function saveOrder({ orderId, grossAmount, customer, itemDetails }) {
         customer_name: customer.name || 'Guest',
         customer_email: customer.email || null,
         gross_amount: grossAmount,
+        discount_amount: discountAmount,
+        user_voucher_id: userVoucherId,
         status: 'pending',
         shipping_address: customer.address || null,
         recipient_phone: customer.phone || null,
@@ -137,7 +188,7 @@ export default async function handler(req, res) {
   try {
     const body =
       typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
-    const { items = [], customer = {} } = body;
+    const { items = [], customer = {}, voucher = null } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Keranjang kosong.' });
@@ -185,12 +236,29 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Total transaksi tidak valid.' });
     }
 
+    // Hitung diskon voucher di server (sumber kebenaran). Net = subtotal - diskon.
+    const { discount, userVoucherId } = await resolveVoucher(
+      voucher,
+      grossAmount,
+      customer.id ?? null
+    );
+    const netAmount = Math.max(grossAmount - discount, 0);
+
     // Nomor order unik.
     const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Simpan order (status pending) DULU agar halaman finish selalu menemukannya,
     // terlepas dari apakah callback browser sempat jalan.
-    await saveOrder({ orderId, grossAmount, customer, itemDetails });
+    // gross_amount = NET yang ditagih (subtotal - diskon) agar konsisten dengan
+    // pembayaran Midtrans & perhitungan revenue.
+    await saveOrder({
+      orderId,
+      grossAmount: netAmount,
+      discountAmount: discount,
+      userVoucherId,
+      customer,
+      itemDetails,
+    });
 
     // Kirim email konfirmasi pesanan (non-fatal: jangan gagalkan checkout).
     try {
@@ -198,7 +266,7 @@ export default async function handler(req, res) {
         order_number: orderId,
         customer_name: customer.name || 'Guest',
         customer_email: customer.email || null,
-        gross_amount: grossAmount,
+        gross_amount: netAmount,
         shipping_address: customer.address || null,
         recipient_phone: customer.phone || null,
         track_pin: customer.trackPin || null,
@@ -226,9 +294,21 @@ export default async function handler(req, res) {
     // Auth Midtrans: Basic base64(serverKey + ':').
     const auth = Buffer.from(`${serverKey}:`).toString('base64');
 
+    // Midtrans mensyaratkan sum(item_details) == gross_amount. Bila ada diskon,
+    // tambahkan baris diskon bernilai negatif agar totalnya cocok dengan netAmount.
+    const snapItemDetails = [...itemDetails];
+    if (discount > 0) {
+      snapItemDetails.push({
+        id: 'VOUCHER_DISCOUNT',
+        price: -discount,
+        quantity: 1,
+        name: 'Diskon Voucher',
+      });
+    }
+
     const payload = {
-      transaction_details: { order_id: orderId, gross_amount: grossAmount },
-      item_details: itemDetails,
+      transaction_details: { order_id: orderId, gross_amount: netAmount },
+      item_details: snapItemDetails,
       customer_details: {
         first_name: customer.name || 'Guest',
         email: customer.email || 'guest@furnicrm.local',
@@ -284,6 +364,8 @@ export default async function handler(req, res) {
       redirectUrl: snapData.redirect_url,
       orderId,
       grossAmount,
+      discountAmount: discount,
+      netAmount,
     });
   } catch (err) {
     return res

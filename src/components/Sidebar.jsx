@@ -12,6 +12,7 @@ import {
   FiShoppingBag,
   FiMapPin,
   FiHeart,
+  FiTag,
   FiSearch,
 } from 'react-icons/fi';
 import SidebarReusable from '../Reusable/Sidebar';
@@ -44,6 +45,7 @@ const MEMBER_NAV = [
       { to: '/member', icon: FiGrid, text: 'Dashboard', end: true },
       { to: '/member/transactions', icon: FiClock, text: 'Riwayat Transaksi' },
       { to: '/member/track', icon: FiMapPin, text: 'Lacak Pesanan' },
+      { to: '/member/vouchers', icon: FiTag, text: 'Voucher' },
       { to: '/member/cart', icon: FiShoppingCart, text: 'Keranjang' },
     ],
   },
