@@ -14,6 +14,9 @@ import {
   getOrderStatusMeta,
   getNextStatusAction,
 } from '../../services/orders';
+import Pagination from '../../components/Pagination';
+
+const PAGE_SIZE = 10;
 
 const formatRupiah = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 const formatDate = (iso) =>
@@ -39,6 +42,7 @@ function Pesanan() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     loadOrders();
@@ -79,6 +83,13 @@ function Pesanan() {
       return matchSearch && matchStatus;
     });
   }, [orders, search, statusFilter]);
+
+  // Reset ke halaman 1 saat filter/pencarian berubah.
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
+
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleAdvance = async (order) => {
     const action = getNextStatusAction(order.status);
@@ -169,7 +180,7 @@ function Pesanan() {
               )}
 
               {!loading &&
-                filtered.map((order) => {
+                paged.map((order) => {
                   const meta = getOrderStatusMeta(order.status);
                   const action = getNextStatusAction(order.status);
                   return (
@@ -224,6 +235,14 @@ function Pesanan() {
               )}
             </TableBody>
           </Table>
+          {!loading && (
+            <Pagination
+              currentPage={page}
+              totalItems={filtered.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          )}
         </div>
       </div>
     </>

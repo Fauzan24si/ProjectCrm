@@ -11,6 +11,9 @@ import {
 } from '@/components/ui/table';
 import { getCustomersWithSpending } from '../../services/users';
 import { getMembershipMeta, formatRupiah } from '../../lib/membership';
+import Pagination from '../../components/Pagination';
+
+const PAGE_SIZE = 10;
 
 function MembershipBadge({ membership }) {
   const meta = getMembershipMeta(membership);
@@ -29,6 +32,7 @@ function Customers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,6 +60,12 @@ function Customers() {
       (u.email || '').toLowerCase().includes(q)
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <>
@@ -109,7 +119,7 @@ function Customers() {
                 ))}
 
               {!loading &&
-                filtered.map((user) => (
+                paged.map((user) => (
                   <TableRow key={user.id} onClick={() => navigate(`/customers/${user.id}`)}>
                     <TableCell style={{ paddingLeft: 24 }}>
                       <div className="user-info-cell">
@@ -156,6 +166,14 @@ function Customers() {
             </TableBody>
           </Table>
         </div>
+        {!loading && (
+          <Pagination
+            currentPage={page}
+            totalItems={filtered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </>
   );

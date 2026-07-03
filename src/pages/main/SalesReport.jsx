@@ -11,6 +11,9 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getSalesReport, getOrderStatusMeta } from '../../services/orders';
+import Pagination from '../../components/Pagination';
+
+const PAGE_SIZE = 10;
 
 const formatRupiah = (n) =>
   'Rp ' + Number(n).toLocaleString('id-ID');
@@ -39,6 +42,7 @@ function SalesReport() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,6 +90,12 @@ function SalesReport() {
       return matchSearch && matchTab(statusFilter, o.status);
     });
   }, [orders, search, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
+
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <>
@@ -195,7 +205,7 @@ function SalesReport() {
                 ))}
 
               {!loading &&
-                filtered.map((row) => {
+                paged.map((row) => {
                   const meta = getOrderStatusMeta(row.status);
                   const dotClass =
                     ['cancelled', 'failed'].includes((row.status || '').toLowerCase())
@@ -241,6 +251,14 @@ function SalesReport() {
             </TableBody>
           </Table>
         </div>
+        {!loading && (
+          <Pagination
+            currentPage={page}
+            totalItems={filtered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </>
   );

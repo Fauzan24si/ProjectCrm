@@ -7,6 +7,9 @@ import { formatRupiah } from '../../lib/membership';
 import { getCurrentUser } from '../../services/auth';
 import { getUser } from '../../services/users';
 import { createTransaction } from '../../services/payment';
+import Pagination from '../../components/Pagination';
+
+const PAGE_SIZE = 12;
 
 function Shop() {
   const navigate = useNavigate();
@@ -14,6 +17,7 @@ function Shop() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartLoading, setCartLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -103,6 +107,12 @@ function Shop() {
     );
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <>
       <style>{shopStyles}</style>
@@ -149,7 +159,7 @@ function Shop() {
             ))}
 
           {!loading &&
-            filtered.map((p) => (
+            paged.map((p) => (
               <div
                 key={p.id}
                 className="shop-card"
@@ -191,6 +201,15 @@ function Shop() {
 
         {!loading && !error && filtered.length === 0 && (
           <div className="shop-empty">Tidak ada produk yang cocok dengan pencarian.</div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <Pagination
+            currentPage={page}
+            totalItems={filtered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

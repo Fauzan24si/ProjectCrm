@@ -17,11 +17,15 @@ import {
   summarizeOrders,
   getOrderStatusMeta,
 } from '../../services/orders';
+import Pagination from '../../components/Pagination';
+
+const PAGE_SIZE = 10;
 
 function TransactionHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,6 +52,7 @@ function TransactionHistory() {
   }, [navigate]);
 
   const summary = summarizeOrders(orders);
+  const paged = orders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (loading) {
     return (
@@ -115,7 +120,7 @@ function TransactionHistory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((order) => {
+                {paged.map((order) => {
                   const statusMeta = getOrderStatusMeta(order.status);
                   return (
                     <TableRow key={order.id}>
@@ -151,6 +156,12 @@ function TransactionHistory() {
                 })}
               </TableBody>
             </Table>
+            <Pagination
+              currentPage={page}
+              totalItems={orders.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </div>

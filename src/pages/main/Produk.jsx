@@ -19,6 +19,9 @@ import {
   deleteProduct,
 } from '../../services/products';
 import { formatRupiah } from '../../lib/membership';
+import Pagination from '../../components/Pagination';
+
+const PAGE_SIZE = 10;
 
 function Produk() {
   const [products, setProducts] = useState([]);
@@ -31,12 +34,13 @@ function Produk() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [page, setPage] = useState(1);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
-    getProducts({ limit: 30 })
+    getProducts({ limit: 100 })
       .then((data) => {
         if (!active) return;
         setProducts(data.products || []);
@@ -60,6 +64,12 @@ function Produk() {
       p.brand?.toLowerCase().includes(q)
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const showFeedback = (msg) => {
     setFeedback(msg);
@@ -179,7 +189,7 @@ function Produk() {
                 ))}
 
               {!loading &&
-                filtered.map((p) => (
+                paged.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell style={{ paddingLeft: 24 }}>
                       <div className="prod-info-cell">
@@ -236,6 +246,14 @@ function Produk() {
             </TableBody>
           </Table>
         </div>
+        {!loading && (
+          <Pagination
+            currentPage={page}
+            totalItems={filtered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       {/* Modal Add / Edit */}

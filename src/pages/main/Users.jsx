@@ -13,6 +13,9 @@ import {
 } from '@/components/ui/table';
 import { getUsers } from '../../services/users';
 import { getMembershipMeta, formatRupiah } from '../../lib/membership';
+import Pagination from '../../components/Pagination';
+
+const PAGE_SIZE = 10;
 
 function MembershipBadge({ membership }) {
   const meta = getMembershipMeta(membership);
@@ -32,6 +35,7 @@ function Users() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,6 +63,13 @@ function Users() {
       (u.email || '').toLowerCase().includes(q)
     );
   });
+
+  // Reset ke halaman 1 saat pencarian berubah.
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <>
@@ -118,7 +129,7 @@ function Users() {
                 ))}
 
               {!loading &&
-                filtered.map((user, i) => (
+                paged.map((user, i) => (
                   <TableRow key={user.id} onClick={() => navigate(`/users/${user.id}`)}>
                     <TableCell style={{ paddingLeft: 24 }} onClick={(e) => e.stopPropagation()}>
                       <input
@@ -172,6 +183,14 @@ function Users() {
             </TableBody>
           </Table>
         </div>
+        {!loading && (
+          <Pagination
+            currentPage={page}
+            totalItems={filtered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <Modal
