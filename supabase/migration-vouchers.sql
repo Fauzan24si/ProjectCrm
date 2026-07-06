@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRASI: Voucher & Point Redemption (FurniCRM)
+-- MIGRASI: Voucher & Point Redemption (Furniture)
 -- ----------------------------------------------------------------------------
 -- Jalankan di Supabase Dashboard > SQL Editor SEBELUM memakai fitur React.
 -- IDEMPOTEN & NON-DESTRUKTIF:

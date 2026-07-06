@@ -284,7 +284,7 @@ function PaymentFinish({ mode = 'finish' }) {
           <div className="pf-invoice-head">
             <div>
               <h2 className="pf-invoice-title">Faktur Pembelian</h2>
-              <p className="pf-invoice-sub">FurniCRM</p>
+              <p className="pf-invoice-sub">Furniture</p>
             </div>
             <span
               className="pf-badge"

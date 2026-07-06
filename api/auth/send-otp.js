@@ -9,7 +9,7 @@
  *
  * Env yang dipakai (set di .env dev & Vercel):
  *   RESEND_API_KEY           - API key Resend (rahasia)
- *   RESEND_FROM              - alamat pengirim terverifikasi, mis. "FurniCRM <noreply@domain.com>"
+ *   RESEND_FROM              - alamat pengirim terverifikasi, mis. "Furniture <noreply@domain.com>"
  *   VITE_SUPABASE_URL        - URL Supabase
  *   VITE_SUPABASE_ANON_KEY   - anon key Supabase
  */
@@ -69,7 +69,7 @@ async function sendEmail(email, code) {
   const from =
     process.env.RESEND_FROM ||
     process.env.EMAIL_FROM ||
-    'FurniCRM <onboarding@resend.dev>';
+    'Furniture <onboarding@resend.dev>';
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -80,12 +80,12 @@ async function sendEmail(email, code) {
     body: JSON.stringify({
       from,
       to: [email],
-      subject: `Kode verifikasi FurniCRM: ${code}`,
+      subject: `Kode verifikasi Furniture: ${code}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
           <h2 style="color:#101828;margin:0 0 8px;">Verifikasi Email Anda</h2>
           <p style="color:#475467;font-size:14px;line-height:1.6;margin:0 0 20px;">
-            Gunakan kode berikut untuk menyelesaikan registrasi akun FurniCRM Anda.
+            Gunakan kode berikut untuk menyelesaikan registrasi akun Furniture Anda.
             Kode berlaku selama ${OTP_TTL_MINUTES} menit.
           </p>
           <div style="font-size:34px;font-weight:700;letter-spacing:10px;color:#101828;

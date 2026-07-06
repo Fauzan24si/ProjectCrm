@@ -130,7 +130,11 @@ const HeaderSection = () => {
                     </div>
                   </>
                 )}
-                <Link to="/shop" style={styles.cartLink} onClick={() => setShowCart(false)}>
+                <Link
+                  to={items.length === 0 ? '/shop' : '/member/cart'}
+                  style={styles.cartLink}
+                  onClick={() => setShowCart(false)}
+                >
                   {items.length === 0 ? 'Mulai belanja' : 'Lihat keranjang'}
                 </Link>
               </Cart>

@@ -216,8 +216,17 @@ function Profile() {
 
           <div className="form-actions">
             <button type="submit" className="btn-save" disabled={saving}>
-              <FiSave />
-              {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+              {saving ? (
+                <>
+                  <div className="profile-spinner"></div>
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <FiSave />
+                  Simpan Perubahan
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -371,6 +380,19 @@ const profileStyles = `
   }
   .btn-save:hover:not(:disabled) { background: #000000; }
   .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+  
+  .profile-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ffffff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: profile-spin 0.6s linear infinite;
+  }
+  
+  @keyframes profile-spin {
+    to { transform: rotate(360deg); }
+  }
 `;
 
 export default Profile;

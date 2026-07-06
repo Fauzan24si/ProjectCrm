@@ -1,5 +1,5 @@
 -- ============================================================================
--- MIGRASI: View agregasi untuk Dashboard Admin (FurniCRM)
+-- MIGRASI: View agregasi untuk Dashboard Admin (Furniture)
 -- ----------------------------------------------------------------------------
 -- Jalankan di Supabase Dashboard > SQL Editor.
 -- TIDAK mengubah/menghapus tabel. Hanya membuat 2 view read-only + grant.

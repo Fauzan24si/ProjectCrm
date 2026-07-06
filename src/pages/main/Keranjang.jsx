@@ -8,11 +8,15 @@ import {
   FiArrowLeft,
   FiCheckCircle,
   FiTag,
+  FiMapPin,
+  FiPhone,
+  FiEdit2,
+  FiSave,
 } from 'react-icons/fi';
 import { useCart } from '../../context/CartContext';
 import { formatRupiah } from '../../lib/membership';
 import { getCurrentUser } from '../../services/auth';
-import { getUser } from '../../services/users';
+import { getUser, updateUser } from '../../services/users';
 import { getUserVouchers } from '../../services/vouchers';
 import { calculateDiscount, isVoucherEligible } from '../../lib/vouchers';
 import { createTransaction } from '../../services/payment';
@@ -22,28 +26,79 @@ function Keranjang() {
     useCart();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
-  const [feedback, setFeedback] = useState(null); // { type, message }
-  const [vouchers, setVouchers] = useState([]); // user_vouchers + vouchers(*)
-  const [selectedUv, setSelectedUv] = useState(null); // user_voucher terpilih
+  const [feedback, setFeedback] = useState(null);
+  const [vouchers, setVouchers] = useState([]);
+  const [selectedUv, setSelectedUv] = useState(null);
+
+  // Alamat & no HP
+  const [profile, setProfile] = useState(null);
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({ address: '', phone: '' });
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressError, setAddressError] = useState(null);
+  const [addressSaved, setAddressSaved] = useState(false);
 
   const session = getCurrentUser();
   const isGuest = !session;
 
-  // Ambil voucher milik user (hanya untuk member login).
+  // Load profil user (alamat & no HP)
+  useEffect(() => {
+    if (!session) return;
+    let active = true;
+    getUser(session.id).then((data) => {
+      if (!active) return;
+      setProfile(data);
+      setAddressForm({ address: data?.address || '', phone: data?.phone || '' });
+      // Kalau belum ada alamat, langsung buka form edit
+      if (!data?.address || !data?.phone) setEditingAddress(true);
+    });
+    return () => { active = false; };
+  }, [session?.id]);
+
+  // Load voucher user
   useEffect(() => {
     if (!session) return;
     let active = true;
     getUserVouchers(session.id)
-      .then((data) => {
-        if (active) setVouchers(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (active) setVouchers([]);
-      });
-    return () => {
-      active = false;
-    };
+      .then((data) => { if (active) setVouchers(Array.isArray(data) ? data : []); })
+      .catch(() => { if (active) setVouchers([]); });
+    return () => { active = false; };
   }, [session?.id]);
+
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setAddressForm((prev) => ({ ...prev, [name]: value }));
+    setAddressError(null);
+    setAddressSaved(false);
+  };
+
+  const handleSaveAddress = async () => {
+    const phoneDigits = addressForm.phone.replace(/\D/g, '');
+    if (!addressForm.address.trim()) {
+      setAddressError('Alamat tidak boleh kosong.');
+      return;
+    }
+    if (phoneDigits.length < 8) {
+      setAddressError('Nomor HP minimal 8 digit.');
+      return;
+    }
+    setSavingAddress(true);
+    setAddressError(null);
+    try {
+      const updated = await updateUser(session.id, {
+        address: addressForm.address.trim(),
+        phone: addressForm.phone.trim(),
+      });
+      setProfile(updated);
+      setEditingAddress(false);
+      setAddressSaved(true);
+      setTimeout(() => setAddressSaved(false), 3000);
+    } catch (err) {
+      setAddressError(err.message || 'Gagal menyimpan alamat.');
+    } finally {
+      setSavingAddress(false);
+    }
+  };
 
   const selectedVoucher = selectedUv ? selectedUv.vouchers : null;
   const discount = selectedVoucher
@@ -52,9 +107,17 @@ function Keranjang() {
   const grandTotal = Math.max(totalPrice - discount, 0);
 
   const handleCheckout = async () => {
-    // Wajib login untuk melakukan order.
     if (!session) {
       navigate('/login', { state: { from: '/member/cart' } });
+      return;
+    }
+
+    if (!profile?.address || !profile?.phone) {
+      setFeedback({
+        type: 'error',
+        message: 'Lengkapi alamat & no HP pengiriman sebelum checkout.',
+      });
+      setEditingAddress(true);
       return;
     }
 
@@ -62,17 +125,6 @@ function Keranjang() {
     setFeedback(null);
 
     try {
-      // Ambil data alamat & no HP penerima dari profil.
-      const profile = await getUser(session.id);
-      if (!profile?.address || !profile?.phone) {
-        setProcessing(false);
-        setFeedback({
-          type: 'error',
-          message: 'Lengkapi alamat & no HP penerima di menu Alamat sebelum checkout.',
-        });
-        return;
-      }
-
       const customer = {
         id: session?.id || null,
         name: session?.name || 'Guest',
@@ -81,14 +133,11 @@ function Keranjang() {
         address: profile.address,
       };
 
-      // Konfirmasi pesanan: buat invoice (order pending) di server.
-      // Diskon dihitung ulang di server berdasarkan userVoucherId.
       const voucher = selectedUv ? { userVoucherId: selectedUv.id } : null;
       const { orderId } = await createTransaction({ items, customer, voucher });
       sessionStorage.setItem('last_order_id', orderId);
       clearCart();
       setProcessing(false);
-      // Order masih pending: arahkan ke halaman konfirmasi pembayaran.
       navigate(`/payment/confirm?order_id=${orderId}`);
     } catch (err) {
       setFeedback({ type: 'error', message: err.message });
@@ -183,6 +232,100 @@ function Keranjang() {
             {/* Ringkasan */}
             <div className="cart-summary">
               <h3>Ringkasan Belanja</h3>
+
+              {/* Alamat & No HP — hanya untuk member login */}
+              {!isGuest && (
+                <div className="cart-address-box">
+                  <div className="cart-address-header">
+                    <span className="cart-address-label">
+                      <FiMapPin size={13} /> Alamat Pengiriman
+                    </span>
+                    {!editingAddress && profile?.address && (
+                      <button
+                        type="button"
+                        className="cart-address-edit-btn"
+                        onClick={() => setEditingAddress(true)}
+                      >
+                        <FiEdit2 size={12} /> Ubah
+                      </button>
+                    )}
+                  </div>
+
+                  {editingAddress ? (
+                    <div className="cart-address-form">
+                      <textarea
+                        name="address"
+                        rows={3}
+                        value={addressForm.address}
+                        onChange={handleAddressChange}
+                        placeholder="Alamat lengkap pengiriman"
+                        className="cart-address-textarea"
+                      />
+                      <div className="cart-address-phone-row">
+                        <FiPhone size={13} />
+                        <input
+                          name="phone"
+                          type="tel"
+                          value={addressForm.phone}
+                          onChange={handleAddressChange}
+                          placeholder="No HP penerima"
+                          className="cart-address-input"
+                        />
+                      </div>
+                      {addressError && (
+                        <p className="cart-address-error">{addressError}</p>
+                      )}
+                      <div className="cart-address-actions">
+                        {profile?.address && (
+                          <button
+                            type="button"
+                            className="cart-address-cancel"
+                            onClick={() => {
+                              setAddressForm({ address: profile.address || '', phone: profile.phone || '' });
+                              setEditingAddress(false);
+                              setAddressError(null);
+                            }}
+                          >
+                            Batal
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="cart-address-save"
+                          onClick={handleSaveAddress}
+                          disabled={savingAddress}
+                        >
+                          {savingAddress ? (
+                            <>
+                              <div className="cart-btn-spinner"></div>
+                              Menyimpan...
+                            </>
+                          ) : (
+                            <>
+                              <FiSave size={13} />
+                              Simpan
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="cart-address-display">
+                      <p className="cart-address-text">{profile?.address}</p>
+                      <p className="cart-address-phone">
+                        <FiPhone size={12} /> {profile?.phone}
+                      </p>
+                    </div>
+                  )}
+
+                  {addressSaved && (
+                    <p className="cart-address-saved">
+                      <FiCheckCircle size={13} /> Alamat tersimpan.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="summary-row">
                 <span>Total Item</span>
                 <span>{totalItems}</span>
@@ -262,11 +405,16 @@ function Keranjang() {
                 onClick={handleCheckout}
                 disabled={processing}
               >
-                {processing
-                  ? 'Memproses...'
-                  : isGuest
-                    ? 'Masuk untuk Checkout'
-                    : 'Konfirmasi Pesanan'}
+                {processing ? (
+                  <span className="cart-btn-loading">
+                    <div className="cart-btn-spinner"></div>
+                    Memproses...
+                  </span>
+                ) : isGuest ? (
+                  'Masuk untuk Checkout'
+                ) : (
+                  'Konfirmasi Pesanan'
+                )}
               </button>
             </div>
           </div>
@@ -456,7 +604,148 @@ const cartStyles = `
   }
   .summary-discount { color: #067647; font-weight: 600; }
 
-  .cart-voucher { margin: 8px 0 4px; }
+  .cart-address-box {
+    background: #f9fafb;
+    border: 1px solid #eaecf0;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .cart-address-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cart-address-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #667085;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .cart-address-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #344054;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .cart-address-edit-btn:hover { background: #f3f4f6; }
+
+  .cart-address-display { display: flex; flex-direction: column; gap: 4px; }
+  .cart-address-text { margin: 0; font-size: 13px; color: #101828; line-height: 1.5; }
+  .cart-address-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    font-size: 12px;
+    color: #667085;
+  }
+
+  .cart-address-form { display: flex; flex-direction: column; gap: 8px; }
+  .cart-address-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #101828;
+    resize: vertical;
+    outline: none;
+    transition: border 0.15s;
+    box-sizing: border-box;
+  }
+  .cart-address-textarea:focus { border-color: #101828; box-shadow: 0 0 0 3px rgba(16,24,40,0.1); }
+  .cart-address-phone-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #98a2b3;
+  }
+  .cart-address-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #101828;
+    outline: none;
+    transition: border 0.15s;
+  }
+  .cart-address-input:focus { border-color: #101828; box-shadow: 0 0 0 3px rgba(16,24,40,0.1); }
+  .cart-address-error { margin: 0; font-size: 12px; color: #b42318; }
+  .cart-address-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .cart-address-cancel {
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid #d0d5dd;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #344054;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .cart-address-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: #101828;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .cart-address-save:hover:not(:disabled) { background: #000; }
+  .cart-address-save:disabled { opacity: 0.6; cursor: not-allowed; }
+  .cart-address-saved {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #067647;
+  }
+  
+  .cart-btn-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ffffff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: cart-spin 0.6s linear infinite;
+  }
+  
+  .cart-btn-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  @keyframes cart-spin {
+    to { transform: rotate(360deg); }
+  }
+  
   .cart-voucher-label {
     display: inline-flex;
     align-items: center;

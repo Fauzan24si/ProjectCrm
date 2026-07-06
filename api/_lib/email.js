@@ -24,7 +24,7 @@ function fromAddress() {
   return (
     process.env.RESEND_FROM ||
     process.env.EMAIL_FROM ||
-    'FurniCRM <onboarding@resend.dev>'
+    'Furniture <onboarding@resend.dev>'
   );
 }
 
@@ -100,11 +100,11 @@ function itemsRows(items = []) {
 function shell(title, bodyHtml) {
   return `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#101828;">
-      <h1 style="font-size:20px;margin:0 0 4px;">FurniCRM</h1>
+      <h1 style="font-size:20px;margin:0 0 4px;">Furniture</h1>
       <h2 style="font-size:16px;font-weight:600;color:#475467;margin:0 0 20px;">${title}</h2>
       ${bodyHtml}
       <p style="color:#98a2b3;font-size:12px;margin:24px 0 0;border-top:1px solid #f2f4f7;padding-top:16px;">
-        Email ini dikirim otomatis oleh FurniCRM. Mohon tidak membalas email ini.
+        Email ini dikirim otomatis oleh Furniture. Mohon tidak membalas email ini.
       </p>
     </div>`;
 }
@@ -208,7 +208,7 @@ export async function sendInvoiceForOrder(orderNumber) {
      ${metaBlock(order)}
      ${detailsTable(order)}
      <p style="color:#475467;font-size:13px;margin:16px 0 0;">
-       Pesanan Anda akan segera diproses. Terima kasih telah berbelanja di FurniCRM.
+       Pesanan Anda akan segera diproses. Terima kasih telah berbelanja di Furniture.
      </p>`
   );
 

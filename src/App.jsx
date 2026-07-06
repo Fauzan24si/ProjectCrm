@@ -19,6 +19,7 @@ const Contact = React.lazy(() => import('./pages/main/Contact'));
 const ShopProductDetail = React.lazy(() => import('./pages/main/ShopProductDetail'));
 const Login = React.lazy(() => import('./pages/auth/Login'));
 const Register = React.lazy(() => import('./pages/auth/Register'));
+const OAuthCallback = React.lazy(() => import('./pages/auth/OAuthCallback'));
 const Dashboard = React.lazy(() => import('./pages/main/Dashboard'));
 const MemberDashboard = React.lazy(() => import('./pages/main/MemberDashboard'));
 const Wishlist = React.lazy(() => import('./pages/main/Wishlist'));
@@ -65,6 +66,7 @@ function App() {
                 <Route element={<AuthLayout />}>
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/auth/callback" element={<OAuthCallback />} />
                 </Route>
 
                 {/* Member area — pakai AdminLayout dengan sidebar role-aware */}

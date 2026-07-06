@@ -18,7 +18,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
   });
-  const [step, setStep] = useState('form'); // 'form' | 'otp'
+  const [step, setStep] = useState('form');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -29,10 +29,9 @@ const Register = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = 'Create Account | FurniCRM';
+    document.title = 'Create Account | Furniture';
   }, []);
 
-  // Langkah 1: validasi form lalu kirim OTP ke email.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -59,7 +58,6 @@ const Register = () => {
     }
   };
 
-  // Langkah 2: verifikasi OTP & buat akun.
   const handleVerify = async (e) => {
     e.preventDefault();
     setError('');
@@ -78,9 +76,8 @@ const Register = () => {
         password: dataForm.password,
         otp,
       });
-      // Langsung login: simpan sesi lalu arahkan ke dashboard member.
       setCurrentUser(user);
-      setSuccess('Verifikasi berhasil! Mengarahkan...');
+      setSuccess('Verifikasi berhasil! Mengarahkan…');
       setTimeout(() => navigate('/member'), 900);
     } catch (err) {
       setError(err.message || 'Verifikasi OTP gagal.');
@@ -113,11 +110,11 @@ const Register = () => {
     return (
       <div style={styles.container}>
         <button type="button" onClick={() => { setStep('form'); setError(''); setSuccess(''); }} style={styles.backBtn}>
-          <FiArrowLeft size={15} /> Kembali
+          <FiArrowLeft size={15} /> Back
         </button>
-        <h2 style={styles.title}>Verifikasi Email</h2>
+        <h2 style={styles.title}>Verify email</h2>
         <p style={styles.subtitle}>
-          Masukkan 6 digit kode yang dikirim ke <strong>{dataForm.email}</strong>.
+          Enter the 6-digit code sent to <strong>{dataForm.email}</strong>.
         </p>
 
         <form onSubmit={handleVerify} style={styles.form}>
@@ -141,18 +138,25 @@ const Register = () => {
             {loading ? (
               <span style={styles.btnLoading}>
                 <Spinner style={{ width: 16, height: 16 }} />
-                Memverifikasi...
+                Verifying…
               </span>
             ) : (
-              'Verifikasi & Daftar'
+              'Verify & register'
             )}
           </Button>
         </form>
 
         <p style={styles.footerText}>
-          Tidak menerima kode?{' '}
+          Didn't get the code?{' '}
           <button type="button" onClick={handleResend} disabled={resending} style={styles.linkBtn}>
-            {resending ? 'Mengirim...' : 'Kirim ulang'}
+            {resending ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Spinner style={{ width: 12, height: 12 }} />
+                Resending…
+              </span>
+            ) : (
+              'Resend'
+            )}
           </button>
         </p>
       </div>
@@ -162,14 +166,14 @@ const Register = () => {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Create account</h2>
-      <p style={styles.subtitle}>Please fill in your details to sign up.</p>
+      <p style={styles.subtitle}>Fill in your details to sign up.</p>
 
       <form onSubmit={handleSubmit} style={styles.form}>
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
         <InputField
-          label="Full Name"
+          label="Full name"
           type="text"
           name="name"
           value={dataForm.name}
@@ -180,12 +184,12 @@ const Register = () => {
         />
 
         <InputField
-          label="Email Address"
+          label="Email address"
           type="email"
           name="email"
           value={dataForm.email}
           onChange={handleChange}
-          placeholder="Enter your email"
+          placeholder="you@example.com"
           required
           leftIcon={<FiMail />}
         />
@@ -212,7 +216,7 @@ const Register = () => {
         />
 
         <InputField
-          label="Confirm Password"
+          label="Confirm password"
           type={showConfirmPassword ? 'text' : 'password'}
           name="confirmPassword"
           value={dataForm.confirmPassword}
@@ -236,16 +240,16 @@ const Register = () => {
           {loading ? (
             <span style={styles.btnLoading}>
               <Spinner style={{ width: 16, height: 16 }} />
-              Mengirim kode...
+              Sending code…
             </span>
           ) : (
-            'Lanjut'
+            'Continue'
           )}
         </Button>
       </form>
 
       <p style={styles.footerText}>
-        Already have an account? <Link to="/login" style={styles.cyanLink}>Sign in</Link>
+        Already have an account? <Link to="/login" style={styles.link}>Sign in</Link>
       </p>
     </div>
   );
@@ -254,19 +258,20 @@ const Register = () => {
 const styles = {
   container: {
     width: '100%',
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   title: {
-    fontSize: '30px',
-    fontWeight: '700',
-    color: '#0f172a',
-    margin: '0 0 8px 0',
-    letterSpacing: '-0.5px',
+    fontSize: '24px',
+    fontWeight: '500',
+    color: '#2c2825',
+    margin: '0 0 4px 0',
+    letterSpacing: '-0.2px',
   },
   subtitle: {
-    fontSize: '14.5px',
-    color: '#64748b',
+    fontSize: '14px',
+    color: '#8c8278',
     margin: '0 0 28px 0',
+    fontWeight: '400',
   },
   form: {
     display: 'flex',
@@ -275,8 +280,11 @@ const styles = {
   },
   fullBtn: {
     width: '100%',
-    padding: '12.5px',
-    fontSize: '15px',
+    padding: '11px 20px',
+    fontSize: '14px',
+    fontWeight: '500',
+    borderRadius: '0',
+    letterSpacing: '0.2px',
   },
   btnLoading: {
     display: 'inline-flex',
@@ -287,13 +295,14 @@ const styles = {
   footerText: {
     marginTop: '32px',
     textAlign: 'center',
-    fontSize: '13.5px',
-    color: '#64748b',
+    fontSize: '13px',
+    color: '#8c8278',
   },
-  cyanLink: {
-    color: '#101828',
-    textDecoration: 'none',
-    fontWeight: '600',
+  link: {
+    color: '#2c2825',
+    textDecoration: 'underline',
+    textUnderlineOffset: '2px',
+    fontWeight: '500',
   },
   otpWrap: {
     display: 'flex',
@@ -306,37 +315,43 @@ const styles = {
     gap: '6px',
     background: 'transparent',
     border: 'none',
-    color: '#64748b',
+    color: '#8c8278',
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 500,
     cursor: 'pointer',
     padding: 0,
     marginBottom: '16px',
+    fontFamily: 'inherit',
   },
   linkBtn: {
     background: 'transparent',
     border: 'none',
-    color: '#101828',
-    fontWeight: 600,
+    color: '#2c2825',
+    textDecoration: 'underline',
+    textUnderlineOffset: '2px',
+    fontWeight: 500,
     cursor: 'pointer',
     padding: 0,
-    fontSize: '13.5px',
+    fontSize: '13px',
+    fontFamily: 'inherit',
   },
   error: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-    padding: '12px',
-    borderRadius: '6px',
+    backgroundColor: '#fdf1f0',
+    color: '#bc4a3c',
+    padding: '10px 14px',
+    borderRadius: '0',
     fontSize: '13px',
-    border: '1px solid #fecaca',
+    border: '1px solid #f0d4d0',
+    fontFamily: 'inherit',
   },
   success: {
-    backgroundColor: '#f0fdf4',
-    color: '#16a34a',
-    padding: '12px',
-    borderRadius: '6px',
+    backgroundColor: '#f0f7f1',
+    color: '#3b7a4e',
+    padding: '10px 14px',
+    borderRadius: '0',
     fontSize: '13px',
-    border: '1px solid #bbf7d0',
+    border: '1px solid #d0e3d4',
+    fontFamily: 'inherit',
   },
   eyeBtn: {
     background: 'transparent',
@@ -346,7 +361,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    color: '#667085',
+    color: '#8c8278',
     outline: 'none',
   }
 };

@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { FiShoppingCart, FiSearch, FiTrash2, FiPlus, FiMinus, FiX } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiShoppingCart, FiSearch } from 'react-icons/fi';
 import { getProducts } from '../../services/products';
 import { useCart } from '../../context/CartContext';
 import { formatRupiah } from '../../lib/membership';
 import { getCurrentUser } from '../../services/auth';
-import { getUser } from '../../services/users';
-import { createTransaction } from '../../services/payment';
 import Pagination from '../../components/Pagination';
 
 const PAGE_SIZE = 12;
@@ -18,67 +16,9 @@ function Shop() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [cartLoading, setCartLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [feedback, setFeedback] = useState(null); // { type, message }
 
-  const { items, addItem, removeItem, updateQty, clearCart, totalItems, totalPrice } =
-    useCart();
-
+  const { items, addItem, totalItems } = useCart();
   const session = getCurrentUser();
-  const isGuest = !session;
-
-  const handleCheckout = async () => {
-    // Wajib login untuk melakukan order.
-    if (!session) {
-      navigate('/login', { state: { from: '/shop' } });
-      return;
-    }
-
-    setProcessing(true);
-    setFeedback(null);
-
-    try {
-      // Ambil alamat & no HP penerima dari profil.
-      const profile = await getUser(session.id);
-      if (!profile?.address || !profile?.phone) {
-        setProcessing(false);
-        setFeedback({
-          type: 'error',
-          message: 'Lengkapi alamat & no HP penerima di menu Alamat sebelum checkout.',
-        });
-        return;
-      }
-
-      const customer = {
-        id: session?.id || null,
-        name: session?.name || 'Guest',
-        email: session?.email || '',
-        phone: profile.phone,
-        address: profile.address,
-      };
-
-      // Konfirmasi pesanan: buat invoice (order pending) di server.
-      const { orderId } = await createTransaction({ items, customer });
-      sessionStorage.setItem('last_order_id', orderId);
-      clearCart();
-      setCartOpen(false);
-      setProcessing(false);
-      // Order masih pending: arahkan ke halaman konfirmasi pembayaran.
-      navigate(`/payment/confirm?order_id=${orderId}`);
-    } catch (err) {
-      setProcessing(false);
-      setFeedback({ type: 'error', message: err.message });
-    }
-  };
-
-  // Tampilkan skeleton singkat tiap kali drawer keranjang dibuka.
-  const openCart = () => {
-    setCartOpen(true);
-    setCartLoading(true);
-    setTimeout(() => setCartLoading(false), 600);
-  };
 
   useEffect(() => {
     let active = true;
@@ -137,7 +77,10 @@ function Shop() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button className="shop-cart-btn" onClick={openCart}>
+            <button
+              className="shop-cart-btn"
+              onClick={() => navigate(session ? '/member/cart' : '/login')}
+            >
               <FiShoppingCart size={18} />
               <span>Keranjang</span>
               {totalItems > 0 && <span className="shop-cart-badge">{totalItems}</span>}
@@ -212,96 +155,6 @@ function Shop() {
           />
         )}
       </div>
-
-      {/* Drawer Cart */}
-      {cartOpen && <div className="shop-overlay" onClick={() => setCartOpen(false)} />}
-      <aside className={`shop-drawer ${cartOpen ? 'open' : ''}`}>
-        <div className="shop-drawer-head">
-          <h3>Keranjang ({totalItems})</h3>
-          <button className="shop-drawer-close" onClick={() => setCartOpen(false)}>
-            <FiX size={20} />
-          </button>
-        </div>
-
-        <div className="shop-drawer-body">
-          {cartLoading &&
-            [...Array(Math.max(totalItems, 2) || 2)].map((_, i) => (
-              <div key={`csk-${i}`} className="cart-item cart-item--skeleton">
-                <div className="cart-skel-img" />
-                <div className="cart-skel-info">
-                  <div className="cart-skel-line" />
-                  <div className="cart-skel-line short" />
-                  <div className="cart-skel-qty" />
-                </div>
-              </div>
-            ))}
-
-          {!cartLoading && items.length === 0 && (
-            <p className="shop-drawer-empty">Keranjang masih kosong.</p>
-          )}
-
-          {!cartLoading &&
-            items.map((item) => (
-              <div key={item.key} className="cart-item">
-                <img src={item.thumbnail} alt={item.title} className="cart-item-img" />
-                <div className="cart-item-info">
-                  <p className="cart-item-title">{item.title}</p>
-                  {item.variant && <p className="cart-item-variant">{item.variant}</p>}
-                  <p className="cart-item-price">{formatRupiah(item.price)}</p>
-                  <div className="cart-qty">
-                    <button onClick={() => updateQty(item.key, item.qty - 1)}>
-                      <FiMinus size={13} />
-                    </button>
-                    <span>{item.qty}</span>
-                    <button onClick={() => updateQty(item.key, item.qty + 1)}>
-                      <FiPlus size={13} />
-                    </button>
-                  </div>
-                </div>
-                <button className="cart-item-del" onClick={() => removeItem(item.key)}>
-                  <FiTrash2 size={16} />
-                </button>
-              </div>
-            ))}
-        </div>
-
-        {!cartLoading && items.length > 0 && (
-          <div className="shop-drawer-foot">
-            <div className="cart-total">
-              <span>Total</span>
-              <strong>{formatRupiah(totalPrice)}</strong>
-            </div>
-
-            {isGuest && (
-              <p className="cart-guest-note">
-                Anda harus <Link to="/login">masuk</Link> terlebih dahulu untuk
-                melakukan order.
-              </p>
-            )}
-
-            {feedback && (
-              <div className={`cart-feedback cart-feedback-${feedback.type}`}>
-                {feedback.message}
-              </div>
-            )}
-
-            <button
-              className="cart-checkout"
-              onClick={handleCheckout}
-              disabled={processing}
-            >
-              {processing
-                ? 'Memproses...'
-                : isGuest
-                  ? 'Masuk untuk Checkout'
-                  : 'Konfirmasi Pesanan'}
-            </button>
-            <button className="cart-clear" onClick={clearCart}>
-              Kosongkan keranjang
-            </button>
-          </div>
-        )}
-      </aside>
     </>
   );
 }
@@ -343,10 +196,7 @@ const shopStyles = `
     flex-wrap: wrap;
   }
 
-  .shop-search {
-    position: relative;
-  }
-
+  .shop-search { position: relative; }
   .shop-search-icon {
     position: absolute;
     left: 14px;
@@ -354,7 +204,6 @@ const shopStyles = `
     transform: translateY(-50%);
     color: #9ca3af;
   }
-
   .shop-search input {
     padding: 10px 16px 10px 40px;
     border: 1px solid #e5e7eb;
@@ -364,10 +213,7 @@ const shopStyles = `
     width: 240px;
     font-family: inherit;
   }
-
-  .shop-search input:focus {
-    border-color: var(--primary);
-  }
+  .shop-search input:focus { border-color: var(--primary); }
 
   .shop-cart-btn {
     position: relative;
@@ -404,7 +250,6 @@ const shopStyles = `
     grid-template-columns: repeat(4, 1fr);
     gap: 24px;
   }
-
   @media (max-width: 1024px) { .shop-grid { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 768px)  { .shop-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 480px)  { .shop-grid { grid-template-columns: 1fr; } }
@@ -418,7 +263,6 @@ const shopStyles = `
     display: flex;
     flex-direction: column;
   }
-
   .shop-card:hover {
     box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
     transform: translateY(-3px);
@@ -433,12 +277,7 @@ const shopStyles = `
     justify-content: center;
     overflow: hidden;
   }
-
-  .shop-card-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .shop-card-img img { width: 100%; height: 100%; object-fit: cover; }
 
   .shop-badge {
     position: absolute;
@@ -459,7 +298,6 @@ const shopStyles = `
     gap: 6px;
     flex: 1;
   }
-
   .shop-card-cat {
     font-size: 11px;
     font-weight: 700;
@@ -467,7 +305,6 @@ const shopStyles = `
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-
   .shop-card-title {
     font-size: 15px;
     font-weight: 600;
@@ -480,7 +317,6 @@ const shopStyles = `
     overflow: hidden;
     min-height: 42px;
   }
-
   .shop-card-foot {
     margin-top: auto;
     display: flex;
@@ -488,13 +324,7 @@ const shopStyles = `
     justify-content: space-between;
     padding-top: 8px;
   }
-
-  .shop-card-price {
-    font-size: 18px;
-    font-weight: 700;
-    color: #101828;
-  }
-
+  .shop-card-price { font-size: 18px; font-weight: 700; color: #101828; }
   .shop-add-btn {
     display: inline-flex;
     align-items: center;
@@ -510,7 +340,6 @@ const shopStyles = `
     font-family: inherit;
     transition: opacity 0.2s;
   }
-
   .shop-add-btn:hover { opacity: 0.85; }
 
   .shop-error {
@@ -521,14 +350,8 @@ const shopStyles = `
     border: 1px solid #fecaca;
     margin-bottom: 16px;
   }
+  .shop-empty { text-align: center; padding: 60px 0; color: #667085; }
 
-  .shop-empty {
-    text-align: center;
-    padding: 60px 0;
-    color: #667085;
-  }
-
-  /* Skeleton */
   .shop-card--skeleton { padding: 0; }
   .shop-skel-img {
     aspect-ratio: 1 / 1;
@@ -544,214 +367,7 @@ const shopStyles = `
   }
   .shop-skel-line.short { width: 50%; margin-bottom: 16px; }
   @keyframes shopPulse { 50% { opacity: 0.5; } }
-
-  /* Drawer */
-  .shop-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 1200;
-  }
-
-  .shop-drawer {
-    position: fixed;
-    top: 0;
-    right: 0;
-    height: 100vh;
-    width: 380px;
-    max-width: 90vw;
-    background: #fff;
-    box-shadow: -8px 0 30px rgba(0,0,0,0.15);
-    z-index: 1300;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .shop-drawer.open { transform: translateX(0); }
-
-  .shop-drawer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 24px;
-    border-bottom: 1px solid #eaecf0;
-  }
-
-  .shop-drawer-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
-
-  .shop-drawer-close {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #667085;
-    display: flex;
-  }
-
-  .shop-drawer-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 24px;
-  }
-
-  .shop-drawer-empty {
-    text-align: center;
-    color: #98a2b3;
-    margin-top: 40px;
-  }
-
-  .cart-item {
-    display: flex;
-    gap: 12px;
-    padding: 14px 0;
-    border-bottom: 1px solid #f2f4f7;
-  }
-
-  .cart-item-img {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    object-fit: cover;
-    background: #f7f7f8;
-    flex-shrink: 0;
-  }
-
-  .cart-item-info { flex: 1; min-width: 0; }
-
-  .cart-item-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #101828;
-    margin: 0 0 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .cart-item-price { font-size: 13px; color: var(--primary); font-weight: 700; margin: 0 0 8px; }
-  .cart-item-variant { font-size: 11px; color: #667085; margin: 2px 0 4px; }
-
-  .cart-qty {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    border: 1px solid #eaecf0;
-    border-radius: 8px;
-    padding: 3px 8px;
-  }
-
-  .cart-qty button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #475467;
-    display: flex;
-    padding: 2px;
-  }
-
-  .cart-qty span { font-size: 13px; font-weight: 600; min-width: 16px; text-align: center; }
-
-  .cart-item-del {
-    background: none;
-    border: none;
-    color: #98a2b3;
-    cursor: pointer;
-    align-self: flex-start;
-    padding: 4px;
-  }
-  .cart-item-del:hover { color: #dc2626; }
-
-  /* Skeleton item keranjang */
-  .cart-item--skeleton {
-    align-items: center;
-  }
-  .cart-skel-img {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    background: #f0f0f2;
-    flex-shrink: 0;
-    animation: shopPulse 1.5s infinite;
-  }
-  .cart-skel-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .cart-skel-line {
-    height: 12px;
-    border-radius: 6px;
-    background: #f0f0f2;
-    animation: shopPulse 1.5s infinite;
-  }
-  .cart-skel-line.short { width: 40%; }
-  .cart-skel-qty {
-    width: 90px;
-    height: 26px;
-    border-radius: 8px;
-    background: #f0f0f2;
-    animation: shopPulse 1.5s infinite;
-  }
-
-  .shop-drawer-foot {
-    padding: 20px 24px;
-    border-top: 1px solid #eaecf0;
-  }
-
-  .cart-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    font-size: 15px;
-  }
-  .cart-total strong { font-size: 20px; }
-
-  .cart-checkout {
-    width: 100%;
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    padding: 13px;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .cart-checkout:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  .cart-guest-note {
-    margin: 0 0 12px;
-    font-size: 12px;
-    color: #667085;
-    line-height: 1.5;
-    text-align: center;
-  }
-  .cart-feedback {
-    margin-bottom: 12px;
-    padding: 9px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    text-align: center;
-  }
-  .cart-feedback-success { background: #ecfdf3; color: #067647; border: 1px solid #abefc6; }
-  .cart-feedback-pending { background: #fffaeb; color: #b54708; border: 1px solid #fedf89; }
-  .cart-feedback-error { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
-
-  .cart-clear {
-    width: 100%;
-    background: none;
-    border: none;
-    color: #98a2b3;
-    font-size: 13px;
-    cursor: pointer;
-    margin-top: 10px;
-    font-family: inherit;
-  }
-  .cart-clear:hover { color: #dc2626; }
 `;
 
 export default Shop;
+

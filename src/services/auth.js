@@ -1,4 +1,5 @@
 import supabase from '../lib/supabase';
+import supabaseAuth from '../lib/supabaseAuth';
 
 const STORAGE_KEY = 'auth_user';
 export async function hashPassword(password) {
@@ -138,4 +139,54 @@ function sanitizeUser(user) {
   // eslint-disable-next-line no-unused-vars
   const { password, ...rest } = user;
   return rest;
+}
+
+/**
+ * Mulai Google OAuth flow via Supabase.
+ * Redirect ke Google login, lalu kembali ke /auth/callback.
+ */
+export async function loginWithGoogle() {
+  const { error } = await supabaseAuth.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Dipanggil di halaman /auth/callback setelah redirect dari Google.
+ * Ambil session Supabase, cek/buat user di tabel users, lalu set sesi lokal.
+ * @returns {Promise<object>} user
+ */
+export async function handleOAuthCallback() {
+  const { data: { session }, error } = await supabaseAuth.auth.getSession();
+  if (error || !session) throw new Error('Gagal mendapatkan sesi OAuth.');
+
+  const { user: oauthUser } = session;
+  const email = oauthUser.email.toLowerCase();
+  const name = oauthUser.user_metadata?.full_name || oauthUser.user_metadata?.name || email.split('@')[0];
+
+  // Cek apakah user sudah ada di tabel users
+  const existing = await supabase.get('/users', {
+    params: { email: `eq.${email}`, select: 'id,name,email,role,created_at,membership,total_spent' },
+  });
+
+  let user;
+  if (existing.data && existing.data.length > 0) {
+    user = existing.data[0];
+  } else {
+    // Buat user baru tanpa password (oauth user)
+    const response = await supabase.post(
+      '/users',
+      [{ name, email, password: '', role: 'user', total_spent: 0, membership: 'bronze' }],
+      { headers: { Prefer: 'return=representation' } }
+    );
+    user = Array.isArray(response.data) ? response.data[0] : response.data;
+  }
+
+  const sanitized = sanitizeUser(user);
+  setCurrentUser(sanitized);
+  return sanitized;
 }

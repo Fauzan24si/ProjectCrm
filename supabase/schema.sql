@@ -1,5 +1,5 @@
 -- ============================================================================
--- FurniCRM — SKEMA DATABASE MASTER (Supabase / PostgreSQL)
+-- Furniture — SKEMA DATABASE MASTER (Supabase / PostgreSQL)
 -- ============================================================================
 -- Jalankan SELURUH file ini di Supabase Dashboard > SQL Editor > New query > Run.
 --
@@ -159,7 +159,7 @@ create policy "demo order_items access"  on public.order_items for all using (tr
 -- ============================================================================
 insert into public.users (name, email, password, role, total_spent, membership)
 values
-  ('Admin FurniCRM', 'admin@furnicrm.site',
+  ('Admin Furniture', 'admin@furnicrm.site',
    '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
    'admin', 0, 'bronze'),
   ('Guest Member', 'guest@guest.site',
